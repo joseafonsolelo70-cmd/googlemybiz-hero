@@ -133,10 +133,16 @@ function ProspeccaoPage() {
                         </span>
                       )}
                       {place.telefone && (
-                        <span className="inline-flex items-center gap-1">
+                        <a
+                          href={whatsappLink(place.telefone) ?? undefined}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 text-action hover:underline"
+                        >
                           <Phone className="h-3 w-3" />
                           {place.telefone}
-                        </span>
+                        </a>
                       )}
                       {place.website && (
                         <span className="inline-flex items-center gap-1">
