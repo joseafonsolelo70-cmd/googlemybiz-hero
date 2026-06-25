@@ -113,25 +113,21 @@ function ConfiguracoesPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Sparkles className="h-4 w-4 text-action" />
-                OpenAI API
+                Google Gemini (IA)
               </CardTitle>
               <CardDescription>
-                Usada para gerar abordagens de venda. Se deixar vazio, a IA da Lovable é usada
-                como alternativa.
+                As abordagens de venda são geradas com o modelo <strong>Gemini</strong>. A chave
+                de API (<code>GEMINI_API_KEY</code>) é gerida de forma segura no servidor, não
+                sendo necessário configurá-la aqui.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <Label htmlFor="openai">Chave OpenAI</Label>
-              <Input
-                id="openai"
-                type="password"
-                placeholder="sk-..."
-                value={openaiKey}
-                onChange={(e) => setOpenaiKey(e.target.value)}
-                autoComplete="off"
-              />
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Está tudo pronto — basta usar o botão <strong>Gerar Abordagem IA</strong> no CRM.
+              </p>
             </CardContent>
           </Card>
+
 
           <Button type="submit" variant="action" disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
