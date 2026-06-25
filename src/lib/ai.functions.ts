@@ -6,6 +6,8 @@ interface AbordagemInput {
   canal: "whatsapp" | "email";
 }
 
+const GEMINI_MODEL = "gemini-2.5-flash";
+
 const SYSTEM_PROMPT = `Você é um especialista em vendas de serviços de Google Meu Negócio (GMN) e SEO local.
 Escreva uma abordagem comercial curta, simpática e persuasiva em português de Portugal/Brasil neutro.
 Use o nome da empresa e cite oportunidades reais com base nos dados (avaliações, rating, presença online).
@@ -18,7 +20,7 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
     return { leadId: data.leadId, canal: data.canal === "email" ? "email" : "whatsapp" };
   })
   .handler(async ({ data, context }): Promise<{ texto: string }> => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
 
     const { data: lead, error } = await supabase
       .from("leads")
@@ -27,12 +29,6 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
       .single();
 
     if (error || !lead) throw new Error("Lead não encontrado.");
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("openai_api_key")
-      .eq("id", userId)
-      .single();
 
     const canalLabel = data.canal === "email" ? "e-mail" : "WhatsApp";
     const userPrompt = `Gere uma mensagem para ${canalLabel}.
@@ -47,62 +43,49 @@ Dados da empresa:
 
 ${data.canal === "email" ? "Inclua uma linha de assunto na primeira linha." : "Mensagem direta de WhatsApp, com emojis moderados."}`;
 
-    const openaiKey = profile?.openai_api_key;
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (!geminiKey) {
+      throw new Error("Chave do Gemini não configurada. Defina a GEMINI_API_KEY.");
+    }
 
-    // Prefer the user's OpenAI key; otherwise fall back to Lovable AI.
-    if (openaiKey) {
-      const r = await fetch("https://api.openai.com/v1/chat/completions", {
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+      {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${openaiKey}`,
+          "x-goog-api-key": geminiKey,
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: userPrompt },
+          system_instruction: {
+            parts: [{ text: SYSTEM_PROMPT }],
+          },
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: userPrompt }],
+            },
           ],
-          temperature: 0.8,
+          generationConfig: {
+            temperature: 0.8,
+          },
         }),
-      });
-      if (!r.ok) {
-        const body = await r.text();
-        console.error("OpenAI error", r.status, body);
-        throw new Error("Falha ao gerar abordagem com a OpenAI. Verifique a sua chave.");
-      }
-      const j = (await r.json()) as { choices?: Array<{ message?: { content?: string } }> };
-      return { texto: j.choices?.[0]?.message?.content?.trim() ?? "" };
-    }
-
-    const lovableKey = process.env.LOVABLE_API_KEY;
-    if (!lovableKey) {
-      throw new Error("Configure a sua chave da OpenAI em Configurações para gerar abordagens.");
-    }
-
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${lovableKey}`,
       },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
-      }),
-    });
+    );
 
     if (!r.ok) {
       const body = await r.text();
-      console.error("Lovable AI error", r.status, body);
+      console.error("Gemini error", r.status, body);
       if (r.status === 429) throw new Error("Limite de pedidos atingido. Tente novamente em instantes.");
-      if (r.status === 402) throw new Error("Créditos de IA esgotados. Adicione créditos ou configure a sua chave OpenAI.");
-      throw new Error("Falha ao gerar abordagem. Tente novamente.");
+      if (r.status === 400 || r.status === 401 || r.status === 403) {
+        throw new Error("Falha de autenticação com o Gemini. Verifique a GEMINI_API_KEY.");
+      }
+      throw new Error("Falha ao gerar abordagem com o Gemini. Tente novamente.");
     }
 
-    const j = (await r.json()) as { choices?: Array<{ message?: { content?: string } }> };
-    return { texto: j.choices?.[0]?.message?.content?.trim() ?? "" };
+    const j = (await r.json()) as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    };
+    const texto = j.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim() ?? "";
+    return { texto };
   });
