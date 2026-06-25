@@ -26,7 +26,7 @@ function ConfiguracoesPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [googleKey, setGoogleKey] = useState("");
-  const [openaiKey, setOpenaiKey] = useState("");
+  
   const [saving, setSaving] = useState(false);
 
   const { data: profile, isLoading } = useQuery({
