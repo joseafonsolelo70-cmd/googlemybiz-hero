@@ -35,7 +35,7 @@ function ConfiguracoesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("google_api_key, openai_api_key")
+        .select("google_api_key")
         .eq("id", user!.id)
         .single();
       if (error) throw error;
