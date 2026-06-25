@@ -46,7 +46,6 @@ function ConfiguracoesPage() {
   useEffect(() => {
     if (profile) {
       setGoogleKey(profile.google_api_key ?? "");
-      setOpenaiKey(profile.openai_api_key ?? "");
     }
   }, [profile]);
 
