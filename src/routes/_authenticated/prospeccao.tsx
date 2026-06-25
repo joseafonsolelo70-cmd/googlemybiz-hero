@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScoreBadge } from "@/components/score-badge";
+import { whatsappLink } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/prospeccao")({
   head: () => ({ meta: [{ title: "Prospecção Maps — GMN Prospect" }] }),
@@ -133,10 +134,16 @@ function ProspeccaoPage() {
                         </span>
                       )}
                       {place.telefone && (
-                        <span className="inline-flex items-center gap-1">
+                        <a
+                          href={whatsappLink(place.telefone) ?? undefined}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 text-action hover:underline"
+                        >
                           <Phone className="h-3 w-3" />
                           {place.telefone}
-                        </span>
+                        </a>
                       )}
                       {place.website && (
                         <span className="inline-flex items-center gap-1">

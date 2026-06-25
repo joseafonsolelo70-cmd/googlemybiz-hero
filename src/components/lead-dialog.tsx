@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScoreBadge } from "@/components/score-badge";
+import { whatsappLink } from "@/lib/utils";
 
 type Lead = Tables<"leads">;
 
@@ -141,9 +142,15 @@ export function LeadDialog({
             </p>
           )}
           {lead.telefone && (
-            <p className="flex items-center gap-2">
+            <a
+              href={whatsappLink(lead.telefone) ?? undefined}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 text-action hover:underline"
+            >
               <Phone className="h-3.5 w-3.5" /> {lead.telefone}
-            </p>
+              <span className="text-xs text-muted-foreground">(WhatsApp)</span>
+            </a>
           )}
           {lead.website && (
             <a
