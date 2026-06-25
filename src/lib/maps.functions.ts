@@ -32,41 +32,58 @@ async function searchViaSerpApi(
   query: string,
   apiKey: string,
 ): Promise<PlaceResult[]> {
-  const url = new URL("https://serpapi.com/search.json");
-  url.searchParams.set("engine", "google_maps");
-  url.searchParams.set("type", "search");
-  url.searchParams.set("q", query);
-  url.searchParams.set("hl", "pt");
-  url.searchParams.set("api_key", apiKey);
+  const offsets = [0, 20, 40, 60, 80];
+  const pagePromises = offsets.map(async (start) => {
+    const url = new URL("https://serpapi.com/search.json");
+    url.searchParams.set("engine", "google_maps");
+    url.searchParams.set("type", "search");
+    url.searchParams.set("q", query);
+    url.searchParams.set("hl", "pt");
+    url.searchParams.set("start", start.toString());
+    url.searchParams.set("api_key", apiKey);
 
-  const res = await fetch(url.toString());
-  if (!res.ok) {
-    const body = await res.text();
-    console.error("SerpAPI error", res.status, body);
-    if (res.status === 401) {
-      throw new Error("A chave do SerpAPI é inválida. Verifique a configuração.");
+    try {
+      const res = await fetch(url.toString());
+      if (!res.ok) {
+        const body = await res.text();
+        console.error(`SerpAPI error for start=${start}`, res.status, body);
+        return [];
+      }
+      const json = (await res.json()) as {
+        error?: string;
+        local_results?: SerpMapsResult[];
+        place_results?: SerpMapsResult;
+      };
+      if (json.error) {
+        console.error(`SerpAPI returned error for start=${start}`, json.error);
+        return [];
+      }
+      return json.local_results
+        ? json.local_results
+        : json.place_results
+          ? [json.place_results]
+          : [];
+    } catch (e) {
+      console.error(`Failed to fetch page for start=${start}`, e);
+      return [];
     }
-    throw new Error("Falha ao consultar o Google Maps via SerpAPI. Tente novamente.");
+  });
+
+  const pagesResults = await Promise.all(pagePromises);
+  const list: SerpMapsResult[] = pagesResults.flat();
+
+  // Deduplicate results by place_id or title to ensure clean data
+  const seenIds = new Set<string>();
+  const uniqueList: SerpMapsResult[] = [];
+  for (const item of list) {
+    const id = item.place_id || item.title || "";
+    if (id && !seenIds.has(id)) {
+      seenIds.add(id);
+      uniqueList.push(item);
+    }
   }
 
-  const json = (await res.json()) as {
-    error?: string;
-    local_results?: SerpMapsResult[];
-    place_results?: SerpMapsResult;
-  };
-
-  if (json.error) {
-    console.error("SerpAPI returned error", json.error);
-    throw new Error("Falha ao consultar o Google Maps via SerpAPI. Tente novamente.");
-  }
-
-  const list: SerpMapsResult[] = json.local_results
-    ? json.local_results
-    : json.place_results
-      ? [json.place_results]
-      : [];
-
-  return list.map((p, i) => {
+  return uniqueList.map((p, i) => {
     const telefone = p.phone ?? null;
     const website = p.website ?? null;
     const rating = typeof p.rating === "number" ? p.rating : null;
