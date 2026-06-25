@@ -57,7 +57,6 @@ function ConfiguracoesPage() {
       .from("profiles")
       .update({
         google_api_key: googleKey.trim() || null,
-        openai_api_key: openaiKey.trim() || null,
       })
       .eq("id", user.id);
     setSaving(false);
