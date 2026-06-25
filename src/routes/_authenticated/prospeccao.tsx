@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScoreBadge } from "@/components/score-badge";
+import { whatsappLink } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/prospeccao")({
   head: () => ({ meta: [{ title: "Prospecção Maps — GMN Prospect" }] }),
