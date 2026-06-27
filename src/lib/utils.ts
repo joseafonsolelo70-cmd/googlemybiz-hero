@@ -27,7 +27,7 @@ export function whatsappLink(telefone?: string | null): string | null {
 
   // Se já vier com indicativo internacional ou código de país, usa como está.
   const temCodigoPais =
-    temMais || digitos.startsWith("351") || digitos.startsWith("55");
+    temMais || digitos.startsWith("351") || digitos.startsWith("55") || digitos.startsWith("244");
 
   if (!temCodigoPais) {
     if (digitos.length === 9) {
