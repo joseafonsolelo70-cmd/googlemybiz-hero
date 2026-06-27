@@ -12,7 +12,7 @@ export function cn(...inputs: ClassValue[]) {
 export function whatsappLink(telefone?: string | null): string | null {
   if (!telefone) return null;
 
-  const primeiroNumero = telefone.trim().split(/(?:\/|\||,|;|\bou\b|\bor\b)/i)[0] ?? "";
+  const primeiroNumero = telefone.trim().split(/(?:\/|\||,|;|\bou\b|\bor\b|\bext\b|\bramal\b)/i)[0] ?? "";
   const temMais = primeiroNumero.trim().startsWith("+");
   let digitos = primeiroNumero.replace(/\D/g, "");
   if (!digitos) return null;
@@ -29,15 +29,15 @@ export function whatsappLink(telefone?: string | null): string | null {
     digitos = `244${digitos}`;
   }
 
-  // Evita links inválidos quando o texto traz extensões ou caracteres extras.
-  if (digitos.startsWith("244") && digitos.length > 12) {
-    digitos = digitos.slice(0, 12);
-  } else if (digitos.startsWith("351") && digitos.length > 12) {
-    digitos = digitos.slice(0, 12);
-  } else if (digitos.startsWith("55") && digitos.length > 13) {
-    digitos = digitos.slice(0, 13);
+  if (!digitos.startsWith("244") && digitos.length >= 9) {
+    const numeroLocalAngolano = digitos.slice(-9);
+    digitos = `244${numeroLocalAngolano}`;
   }
 
-  return `https://api.whatsapp.com/send?phone=${digitos}`;
+  if (digitos.startsWith("244") && digitos.length !== 12) {
+    digitos = `244${digitos.slice(-9)}`;
+  }
+
+  return `whatsapp://send?phone=${digitos}`;
 }
 
