@@ -6,16 +6,15 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Gera um link wa.me para abrir uma conversa no WhatsApp a partir de um número.
- * Normaliza o número (remove caracteres não numéricos) e adiciona o código de
- * país quando ele não está presente, com heurística por quantidade de dígitos:
- * 9 dígitos -> Portugal (351); 10 ou 11 dígitos -> Brasil (55).
+ * Gera um link do WhatsApp a partir de um número.
+ * Normaliza o telefone e assume Angola (244) para números locais de 9 dígitos.
  */
 export function whatsappLink(telefone?: string | null): string | null {
   if (!telefone) return null;
 
-  const temMais = telefone.trim().startsWith("+");
-  let digitos = telefone.replace(/\D/g, "");
+  const primeiroNumero = telefone.trim().split(/(?:\/|\||,|;|\bou\b|\bor\b)/i)[0] ?? "";
+  const temMais = primeiroNumero.trim().startsWith("+");
+  let digitos = primeiroNumero.replace(/\D/g, "");
   if (!digitos) return null;
 
   // Remove prefixo internacional "00" ou zeros de numeração nacional (ex.: 09xx).
@@ -25,20 +24,20 @@ export function whatsappLink(telefone?: string | null): string | null {
     digitos = digitos.replace(/^0+/, "");
   }
 
-  // Se já vier com indicativo internacional ou código de país, usa como está.
-  const temCodigoPais =
-    temMais || digitos.startsWith("351") || digitos.startsWith("55") || digitos.startsWith("244");
-
-  if (!temCodigoPais) {
-    if (digitos.length === 9) {
-      // Números nacionais portugueses têm 9 dígitos.
-      digitos = `351${digitos}`;
-    } else if (digitos.length === 10 || digitos.length === 11) {
-      // Números brasileiros (DDD + número) têm 10 ou 11 dígitos.
-      digitos = `55${digitos}`;
-    }
+  // Se vier como número local angolano, adiciona o indicativo de Angola.
+  if (!temMais && digitos.length === 9) {
+    digitos = `244${digitos}`;
   }
 
-  return `https://wa.me/${digitos}`;
+  // Evita links inválidos quando o texto traz extensões ou caracteres extras.
+  if (digitos.startsWith("244") && digitos.length > 12) {
+    digitos = digitos.slice(0, 12);
+  } else if (digitos.startsWith("351") && digitos.length > 12) {
+    digitos = digitos.slice(0, 12);
+  } else if (digitos.startsWith("55") && digitos.length > 13) {
+    digitos = digitos.slice(0, 13);
+  }
+
+  return `https://api.whatsapp.com/send?phone=${digitos}`;
 }
 
