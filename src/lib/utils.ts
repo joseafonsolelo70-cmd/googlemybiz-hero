@@ -12,7 +12,7 @@ export function cn(...inputs: ClassValue[]) {
 export function whatsappLink(telefone?: string | null): string | null {
   if (!telefone) return null;
 
-  const primeiroNumero = telefone.trim().split(/(?:\/|\||,|;|\bou\b|\bor\b)/i)[0] ?? "";
+  const primeiroNumero = telefone.trim().split(/(?:\/|\||,|;|\bou\b|\bor\b|\bext\b|\bramal\b)/i)[0] ?? "";
   const temMais = primeiroNumero.trim().startsWith("+");
   let digitos = primeiroNumero.replace(/\D/g, "");
   if (!digitos) return null;
@@ -38,6 +38,6 @@ export function whatsappLink(telefone?: string | null): string | null {
     digitos = `244${digitos.slice(-9)}`;
   }
 
-  return `https://wa.me/${digitos}`;
+  return `whatsapp://send?phone=${digitos}`;
 }
 
