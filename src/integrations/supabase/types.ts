@@ -116,27 +116,33 @@ export type Database = {
         Row: {
           created_at: string
           email: string | null
+          empresa_vendedor: string | null
           google_api_key: string | null
           id: string
           nome: string | null
+          nome_vendedor: string | null
           openai_api_key: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           email?: string | null
+          empresa_vendedor?: string | null
           google_api_key?: string | null
           id: string
           nome?: string | null
+          nome_vendedor?: string | null
           openai_api_key?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           email?: string | null
+          empresa_vendedor?: string | null
           google_api_key?: string | null
           id?: string
           nome?: string | null
+          nome_vendedor?: string | null
           openai_api_key?: string | null
           updated_at?: string
         }

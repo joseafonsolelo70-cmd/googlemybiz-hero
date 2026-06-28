@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN nome_vendedor text, ADD COLUMN empresa_vendedor text;
