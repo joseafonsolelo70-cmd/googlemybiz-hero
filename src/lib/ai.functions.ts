@@ -42,11 +42,12 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
     const empresa = profile?.empresa_vendedor?.trim() || "JAL Digital";
 
     const canalLabel = data.canal === "email" ? "e-mail" : "WhatsApp";
+    const localizacao = lead.endereco?.trim() || lead.cidade?.trim() || "";
     const userPrompt = `Gere uma mensagem para ${canalLabel}.
 Dados da empresa:
 - Nome: ${lead.nome_empresa}
 - Nicho: ${lead.nicho ?? "n/d"}
-- Cidade: ${lead.cidade ?? "n/d"}
+- Localização (use exatamente esta, não invente outra): ${localizacao || "n/d — NÃO mencione nenhuma localização"}
 - Rating no Google: ${lead.rating ?? "sem rating"}
 - Total de avaliações: ${lead.total_avaliacoes ?? 0}
 - Tem website: ${lead.website ? "sim" : "não"}
