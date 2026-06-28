@@ -61,6 +61,8 @@ function ConfiguracoesPage() {
       .from("profiles")
       .update({
         google_api_key: googleKey.trim() || null,
+        nome_vendedor: nomeVendedor.trim() || null,
+        empresa_vendedor: empresaVendedor.trim() || null,
       })
       .eq("id", user.id);
     setSaving(false);
