@@ -78,7 +78,8 @@ export function LeadDialog({
   });
 
   const gerarMutation = useMutation({
-    mutationFn: (canal: "whatsapp" | "email") => gerar({ data: { leadId: lead!.id, canal } }),
+    mutationFn: (canal: "whatsapp" | "email") =>
+      gerar({ data: { leadId: lead!.id, canal, etapa } }),
     onSuccess: async (res) => {
       setAbordagem(res.texto);
       await supabase.from("leads").update({ abordagem_ia: res.texto }).eq("id", lead!.id);
