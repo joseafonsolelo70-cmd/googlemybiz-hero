@@ -35,6 +35,14 @@ import { ScoreBadge } from "@/components/score-badge";
 import { whatsappLink } from "@/lib/utils";
 
 type Lead = Tables<"leads">;
+type EtapaFunil = "novo" | "contato" | "proposta" | "fechado";
+
+const ETAPAS: { value: EtapaFunil; label: string; hint: string }[] = [
+  { value: "novo", label: "Chegada", hint: "Primeiro contacto — quebrar o gelo" },
+  { value: "contato", label: "Acompanhamento", hint: "Reativar e nutrir o interesse" },
+  { value: "proposta", label: "Proposta", hint: "Negociar e desfazer objeções" },
+  { value: "fechado", label: "Fechamento", hint: "Agradecer e confirmar próximos passos" },
+];
 
 export function LeadDialog({
   lead,
@@ -51,6 +59,9 @@ export function LeadDialog({
   const [abordagem, setAbordagem] = useState("");
   const [followup, setFollowup] = useState("");
   const [nota, setNota] = useState("");
+  const [etapa, setEtapa] = useState<EtapaFunil>(
+    (lead?.status_funil as EtapaFunil | null) ?? "novo",
+  );
 
   const { data: interacoes } = useQuery({
     queryKey: ["interacoes", lead?.id],
@@ -67,7 +78,8 @@ export function LeadDialog({
   });
 
   const gerarMutation = useMutation({
-    mutationFn: (canal: "whatsapp" | "email") => gerar({ data: { leadId: lead!.id, canal } }),
+    mutationFn: (canal: "whatsapp" | "email") =>
+      gerar({ data: { leadId: lead!.id, canal, etapa } }),
     onSuccess: async (res) => {
       setAbordagem(res.texto);
       await supabase.from("leads").update({ abordagem_ia: res.texto }).eq("id", lead!.id);
@@ -172,6 +184,26 @@ export function LeadDialog({
           </TabsList>
 
           <TabsContent value="ia" className="space-y-3 pt-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Etapa do cliente no funil</Label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {ETAPAS.map((e) => (
+                  <button
+                    key={e.value}
+                    type="button"
+                    onClick={() => setEtapa(e.value)}
+                    className={`rounded-md border px-2 py-1.5 text-left text-xs transition-colors ${
+                      etapa === e.value
+                        ? "border-action bg-action/10 text-action"
+                        : "border-border text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    <span className="block font-medium">{e.label}</span>
+                    <span className="block text-[10px] leading-tight opacity-80">{e.hint}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="flex gap-2">
               <Button
                 variant="action"

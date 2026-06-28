@@ -1,36 +1,64 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+type EtapaFunil = "novo" | "contato" | "proposta" | "fechado";
+
 interface AbordagemInput {
   leadId: string;
   canal: "whatsapp" | "email";
+  etapa?: EtapaFunil;
 }
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
-const SYSTEM_PROMPT = (vendedor: string, empresa: string) => `Você é um especialista em vendas de serviços de Google Meu Negócio (GMN) e SEO local, a representar a empresa ${empresa} em nome de ${vendedor}.
-Escreva uma abordagem comercial curta, simpática e persuasiva em português de Portugal/Brasil neutro.
+const ETAPA_OBJETIVO: Record<EtapaFunil, string> = {
+  novo: `ETAPA DO FUNIL: PRIMEIRO CONTACTO (lead acabou de chegar).
+Objetivo: quebrar o gelo e despertar interesse. Apresenta-te, mostra que estudaste o negócio do cliente e aponta 1 ou 2 oportunidades concretas de melhoria no Google Meu Negócio/SEO local. Gera curiosidade sem vender de forma agressiva. Termina pedindo apenas alguns minutos da atenção dele.`,
+  contato: `ETAPA DO FUNIL: ACOMPANHAMENTO / NUTRIÇÃO (já houve um primeiro contacto, mas ainda não há proposta).
+Objetivo: reativar a conversa de forma leve e persuasiva. Relembra o valor que podes trazer, reforça uma prova ou benefício (mais clientes, mais avaliações, melhor posição no Google) e cria uma pequena urgência. Pergunta se faz sentido avançar para uma proposta. Não pareças insistente nem repetitivo.`,
+  proposta: `ETAPA DO FUNIL: PROPOSTA / NEGOCIAÇÃO (cliente está a considerar contratar).
+Objetivo: ser persuasivo e fechar. Resume o ganho concreto que o cliente terá, antecipa e desfaz objeções comuns (preço, tempo, confiança), reforça resultados e diferenciais, e faz uma chamada à ação clara para fechar o serviço (marcar reunião, confirmar início). Transmite confiança e segurança.`,
+  fechado: `ETAPA DO FUNIL: PÓS-FECHAMENTO (cliente fechou o contrato).
+Objetivo: agradecer, confirmar os próximos passos do serviço e reforçar que tomou a decisão certa. Transmite acompanhamento próximo, define expectativas dos primeiros resultados e deixa o cliente tranquilo e bem servido. Tom caloroso e profissional.`,
+};
+
+const SYSTEM_PROMPT = (vendedor: string, empresa: string, etapa: EtapaFunil) => `Você é um especialista em vendas consultivas de serviços de Google Meu Negócio (GMN) e SEO local, a representar a empresa ${empresa} em nome de ${vendedor}. Você acompanha o cliente em todas as fases — desde a chegada até ao fecho do contrato.
 Apresente-te como ${vendedor} da ${empresa}.
+Escreva uma mensagem curta, simpática e PERSUASIVA em português neutro (PT/BR), adequada exatamente à etapa do funil indicada.
+
+${ETAPA_OBJETIVO[etapa]}
+
+Princípios de persuasão a usar com naturalidade: prova social (avaliações/rating), benefício concreto, escassez/urgência suave e chamada à ação clara — sem soar a robô nem agressivo.
 Use o nome da empresa do cliente e cite oportunidades reais com base nos dados (avaliações, rating, presença online).
 REGRA CRÍTICA SOBRE LOCALIZAÇÃO: só pode mencionar a cidade/localização do cliente se ela for fornecida explicitamente nos dados abaixo. NUNCA invente, adivinhe ou assuma uma cidade, bairro, país ou morada. Se a localização não for fornecida (ou estiver como "n/d"), não mencione nenhuma localização na mensagem.
-Não invente factos. Seja consultivo, não agressivo. Termine com uma chamada à ação suave.`;
+Não invente factos. Seja consultivo. Termine sempre com uma chamada à ação adequada à etapa.`;
 
 export const gerarAbordagem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: AbordagemInput) => {
     if (!data?.leadId) throw new Error("Lead inválido.");
-    return { leadId: data.leadId, canal: data.canal === "email" ? "email" : "whatsapp" };
+    const etapas: EtapaFunil[] = ["novo", "contato", "proposta", "fechado"];
+    return {
+      leadId: data.leadId,
+      canal: data.canal === "email" ? "email" : "whatsapp",
+      etapa: data.etapa && etapas.includes(data.etapa) ? data.etapa : undefined,
+    };
   })
   .handler(async ({ data, context }): Promise<{ texto: string }> => {
     const { supabase } = context;
 
     const { data: lead, error } = await supabase
       .from("leads")
-      .select("nome_empresa, rating, total_avaliacoes, score_seo, website, nicho, cidade, endereco, telefone")
+      .select(
+        "nome_empresa, rating, total_avaliacoes, score_seo, website, nicho, cidade, endereco, telefone, status_funil",
+      )
       .eq("id", data.leadId)
       .single();
 
     if (error || !lead) throw new Error("Lead não encontrado.");
+
+    const etapa: EtapaFunil =
+      data.etapa ?? ((lead.status_funil as EtapaFunil | null) ?? "novo");
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -70,7 +98,7 @@ ${data.canal === "email" ? "Inclua uma linha de assunto na primeira linha." : "M
         },
         body: JSON.stringify({
           system_instruction: {
-            parts: [{ text: SYSTEM_PROMPT(vendedor, empresa) }],
+            parts: [{ text: SYSTEM_PROMPT(vendedor, empresa, etapa) }],
           },
           contents: [
             {
