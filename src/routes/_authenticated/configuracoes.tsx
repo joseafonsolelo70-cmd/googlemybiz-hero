@@ -71,7 +71,7 @@ function ConfiguracoesPage() {
       return;
     }
     queryClient.invalidateQueries({ queryKey: ["profile"] });
-    toast.success("Chaves guardadas com sucesso.");
+    toast.success("Configurações guardadas com sucesso.");
   };
 
   return (
