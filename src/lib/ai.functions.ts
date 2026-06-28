@@ -12,6 +12,7 @@ const SYSTEM_PROMPT = (vendedor: string, empresa: string) => `Você é um especi
 Escreva uma abordagem comercial curta, simpática e persuasiva em português de Portugal/Brasil neutro.
 Apresente-te como ${vendedor} da ${empresa}.
 Use o nome da empresa do cliente e cite oportunidades reais com base nos dados (avaliações, rating, presença online).
+REGRA CRÍTICA SOBRE LOCALIZAÇÃO: só pode mencionar a cidade/localização do cliente se ela for fornecida explicitamente nos dados abaixo. NUNCA invente, adivinhe ou assuma uma cidade, bairro, país ou morada. Se a localização não for fornecida (ou estiver como "n/d"), não mencione nenhuma localização na mensagem.
 Não invente factos. Seja consultivo, não agressivo. Termine com uma chamada à ação suave.`;
 
 export const gerarAbordagem = createServerFn({ method: "POST" })
