@@ -31,6 +31,15 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
 
     if (error || !lead) throw new Error("Lead não encontrado.");
 
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("nome_vendedor, empresa_vendedor")
+      .eq("id", context.userId)
+      .single();
+
+    const vendedor = profile?.nome_vendedor?.trim() || "José";
+    const empresa = profile?.empresa_vendedor?.trim() || "JAL Digital";
+
     const canalLabel = data.canal === "email" ? "e-mail" : "WhatsApp";
     const userPrompt = `Gere uma mensagem para ${canalLabel}.
 Dados da empresa:
@@ -59,7 +68,7 @@ ${data.canal === "email" ? "Inclua uma linha de assunto na primeira linha." : "M
         },
         body: JSON.stringify({
           system_instruction: {
-            parts: [{ text: SYSTEM_PROMPT }],
+            parts: [{ text: SYSTEM_PROMPT(vendedor, empresa) }],
           },
           contents: [
             {
