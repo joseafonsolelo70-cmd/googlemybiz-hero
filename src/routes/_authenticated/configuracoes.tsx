@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, KeyRound, MapPin, Sparkles } from "lucide-react";
+import { Loader2, KeyRound, MapPin, Sparkles, User, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,8 @@ function ConfiguracoesPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [googleKey, setGoogleKey] = useState("");
+  const [nomeVendedor, setNomeVendedor] = useState("");
+  const [empresaVendedor, setEmpresaVendedor] = useState("");
   
   const [saving, setSaving] = useState(false);
 
@@ -35,7 +37,7 @@ function ConfiguracoesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("google_api_key")
+        .select("google_api_key, nome_vendedor, empresa_vendedor")
         .eq("id", user!.id)
         .single();
       if (error) throw error;
@@ -46,6 +48,8 @@ function ConfiguracoesPage() {
   useEffect(() => {
     if (profile) {
       setGoogleKey(profile.google_api_key ?? "");
+      setNomeVendedor(profile.nome_vendedor ?? "");
+      setEmpresaVendedor(profile.empresa_vendedor ?? "");
     }
   }, [profile]);
 
@@ -57,6 +61,8 @@ function ConfiguracoesPage() {
       .from("profiles")
       .update({
         google_api_key: googleKey.trim() || null,
+        nome_vendedor: nomeVendedor.trim() || null,
+        empresa_vendedor: empresaVendedor.trim() || null,
       })
       .eq("id", user.id);
     setSaving(false);
@@ -65,7 +71,7 @@ function ConfiguracoesPage() {
       return;
     }
     queryClient.invalidateQueries({ queryKey: ["profile"] });
-    toast.success("Chaves guardadas com sucesso.");
+    toast.success("Configurações guardadas com sucesso.");
   };
 
   return (
@@ -127,9 +133,41 @@ function ConfiguracoesPage() {
           </Card>
 
 
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <User className="h-4 w-4 text-action" />
+                Dados do Vendedor
+              </CardTitle>
+              <CardDescription>
+                Estes dados aparecem nas abordagens geradas pela IA.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="nomeVendedor">Nome do vendedor</Label>
+                <Input
+                  id="nomeVendedor"
+                  placeholder="José"
+                  value={nomeVendedor}
+                  onChange={(e) => setNomeVendedor(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="empresaVendedor">Nome da empresa</Label>
+                <Input
+                  id="empresaVendedor"
+                  placeholder="JAL Digital"
+                  value={empresaVendedor}
+                  onChange={(e) => setEmpresaVendedor(e.target.value)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <Button type="submit" variant="action" disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
-            Guardar chaves
+            Guardar configurações
           </Button>
         </form>
       )}
