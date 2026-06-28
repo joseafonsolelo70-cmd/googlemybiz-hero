@@ -59,6 +59,9 @@ export function LeadDialog({
   const [abordagem, setAbordagem] = useState("");
   const [followup, setFollowup] = useState("");
   const [nota, setNota] = useState("");
+  const [etapa, setEtapa] = useState<EtapaFunil>(
+    (lead?.status_funil as EtapaFunil | null) ?? "novo",
+  );
 
   const { data: interacoes } = useQuery({
     queryKey: ["interacoes", lead?.id],
