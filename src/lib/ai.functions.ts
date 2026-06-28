@@ -12,6 +12,7 @@ const SYSTEM_PROMPT = (vendedor: string, empresa: string) => `Você é um especi
 Escreva uma abordagem comercial curta, simpática e persuasiva em português de Portugal/Brasil neutro.
 Apresente-te como ${vendedor} da ${empresa}.
 Use o nome da empresa do cliente e cite oportunidades reais com base nos dados (avaliações, rating, presença online).
+REGRA CRÍTICA SOBRE LOCALIZAÇÃO: só pode mencionar a cidade/localização do cliente se ela for fornecida explicitamente nos dados abaixo. NUNCA invente, adivinhe ou assuma uma cidade, bairro, país ou morada. Se a localização não for fornecida (ou estiver como "n/d"), não mencione nenhuma localização na mensagem.
 Não invente factos. Seja consultivo, não agressivo. Termine com uma chamada à ação suave.`;
 
 export const gerarAbordagem = createServerFn({ method: "POST" })
@@ -25,7 +26,7 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
 
     const { data: lead, error } = await supabase
       .from("leads")
-      .select("nome_empresa, rating, total_avaliacoes, score_seo, website, nicho, cidade, telefone")
+      .select("nome_empresa, rating, total_avaliacoes, score_seo, website, nicho, cidade, endereco, telefone")
       .eq("id", data.leadId)
       .single();
 
@@ -41,11 +42,12 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
     const empresa = profile?.empresa_vendedor?.trim() || "JAL Digital";
 
     const canalLabel = data.canal === "email" ? "e-mail" : "WhatsApp";
+    const localizacao = lead.endereco?.trim() || lead.cidade?.trim() || "";
     const userPrompt = `Gere uma mensagem para ${canalLabel}.
 Dados da empresa:
 - Nome: ${lead.nome_empresa}
 - Nicho: ${lead.nicho ?? "n/d"}
-- Cidade: ${lead.cidade ?? "n/d"}
+- Localização (use exatamente esta, não invente outra): ${localizacao || "n/d — NÃO mencione nenhuma localização"}
 - Rating no Google: ${lead.rating ?? "sem rating"}
 - Total de avaliações: ${lead.total_avaliacoes ?? 0}
 - Tem website: ${lead.website ? "sim" : "não"}
