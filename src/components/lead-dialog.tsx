@@ -35,6 +35,14 @@ import { ScoreBadge } from "@/components/score-badge";
 import { whatsappLink } from "@/lib/utils";
 
 type Lead = Tables<"leads">;
+type EtapaFunil = "novo" | "contato" | "proposta" | "fechado";
+
+const ETAPAS: { value: EtapaFunil; label: string; hint: string }[] = [
+  { value: "novo", label: "Chegada", hint: "Primeiro contacto — quebrar o gelo" },
+  { value: "contato", label: "Acompanhamento", hint: "Reativar e nutrir o interesse" },
+  { value: "proposta", label: "Proposta", hint: "Negociar e desfazer objeções" },
+  { value: "fechado", label: "Fechamento", hint: "Agradecer e confirmar próximos passos" },
+];
 
 export function LeadDialog({
   lead,
