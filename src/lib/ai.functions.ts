@@ -8,9 +8,10 @@ interface AbordagemInput {
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
-const SYSTEM_PROMPT = `Você é um especialista em vendas de serviços de Google Meu Negócio (GMN) e SEO local.
+const SYSTEM_PROMPT = (vendedor: string, empresa: string) => `Você é um especialista em vendas de serviços de Google Meu Negócio (GMN) e SEO local, a representar a empresa ${empresa} em nome de ${vendedor}.
 Escreva uma abordagem comercial curta, simpática e persuasiva em português de Portugal/Brasil neutro.
-Use o nome da empresa e cite oportunidades reais com base nos dados (avaliações, rating, presença online).
+Apresente-te como ${vendedor} da ${empresa}.
+Use o nome da empresa do cliente e cite oportunidades reais com base nos dados (avaliações, rating, presença online).
 Não invente factos. Seja consultivo, não agressivo. Termine com uma chamada à ação suave.`;
 
 export const gerarAbordagem = createServerFn({ method: "POST" })
