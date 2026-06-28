@@ -26,6 +26,8 @@ function ConfiguracoesPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [googleKey, setGoogleKey] = useState("");
+  const [nomeVendedor, setNomeVendedor] = useState("");
+  const [empresaVendedor, setEmpresaVendedor] = useState("");
   
   const [saving, setSaving] = useState(false);
 
@@ -35,7 +37,7 @@ function ConfiguracoesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("google_api_key")
+        .select("google_api_key, nome_vendedor, empresa_vendedor")
         .eq("id", user!.id)
         .single();
       if (error) throw error;
@@ -46,6 +48,8 @@ function ConfiguracoesPage() {
   useEffect(() => {
     if (profile) {
       setGoogleKey(profile.google_api_key ?? "");
+      setNomeVendedor(profile.nome_vendedor ?? "");
+      setEmpresaVendedor(profile.empresa_vendedor ?? "");
     }
   }, [profile]);
 
