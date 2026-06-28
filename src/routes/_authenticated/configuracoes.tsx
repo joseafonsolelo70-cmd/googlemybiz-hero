@@ -133,6 +133,38 @@ function ConfiguracoesPage() {
           </Card>
 
 
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <User className="h-4 w-4 text-action" />
+                Dados do Vendedor
+              </CardTitle>
+              <CardDescription>
+                Estes dados aparecem nas abordagens geradas pela IA.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="nomeVendedor">Nome do vendedor</Label>
+                <Input
+                  id="nomeVendedor"
+                  placeholder="José"
+                  value={nomeVendedor}
+                  onChange={(e) => setNomeVendedor(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="empresaVendedor">Nome da empresa</Label>
+                <Input
+                  id="empresaVendedor"
+                  placeholder="JAL Digital"
+                  value={empresaVendedor}
+                  onChange={(e) => setEmpresaVendedor(e.target.value)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <Button type="submit" variant="action" disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
             Guardar chaves
