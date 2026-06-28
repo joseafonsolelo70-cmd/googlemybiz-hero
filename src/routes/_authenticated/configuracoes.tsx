@@ -167,7 +167,7 @@ function ConfiguracoesPage() {
 
           <Button type="submit" variant="action" disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
-            Guardar chaves
+            Guardar configurações
           </Button>
         </form>
       )}
