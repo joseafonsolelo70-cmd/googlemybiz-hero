@@ -26,7 +26,7 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
 
     const { data: lead, error } = await supabase
       .from("leads")
-      .select("nome_empresa, rating, total_avaliacoes, score_seo, website, nicho, cidade, telefone")
+      .select("nome_empresa, rating, total_avaliacoes, score_seo, website, nicho, cidade, endereco, telefone")
       .eq("id", data.leadId)
       .single();
 
