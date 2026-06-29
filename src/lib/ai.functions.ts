@@ -34,6 +34,9 @@ Escreva uma mensagem curta, simpática e PERSUASIVA em português neutro (PT/BR)
 
 ${ETAPA_OBJETIVO[etapa]}
 
+MODO CONVERSA: Esta pode ser uma negociação em andamento. As mensagens marcadas como "model" são mensagens que VOCÊ (o vendedor) já enviou; as mensagens "user" depois da primeira são RESPOSTAS REAIS DO CLIENTE. Quando o cliente responder, gere APENAS a próxima mensagem que o vendedor deve enviar, reagindo diretamente ao que o cliente disse (dúvidas, objeções, preço, interesse, recusa). Não repita mensagens anteriores e não invente o que o cliente disse.
+Responda SEMPRE apenas com o texto pronto para o vendedor copiar e enviar — sem explicações, sem aspas, sem rótulos como "Mensagem:".
+
 Princípios de persuasão a usar com naturalidade: prova social (avaliações/rating), benefício concreto, escassez/urgência suave e chamada à ação clara — sem soar a robô nem agressivo.
 Use o nome da empresa do cliente e cite oportunidades reais com base nos dados (avaliações, rating, presença online).
 REGRA CRÍTICA SOBRE LOCALIZAÇÃO: só pode mencionar a cidade/localização do cliente se ela for fornecida explicitamente nos dados abaixo. NUNCA invente, adivinhe ou assuma uma cidade, bairro, país ou morada. Se a localização não for fornecida (ou estiver como "n/d"), não mencione nenhuma localização na mensagem.
@@ -44,10 +47,20 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
   .inputValidator((data: AbordagemInput) => {
     if (!data?.leadId) throw new Error("Lead inválido.");
     const etapas: EtapaFunil[] = ["novo", "contato", "proposta", "fechado"];
+    const historico = Array.isArray(data.historico)
+      ? data.historico
+          .filter((m) => m && typeof m.texto === "string" && m.texto.trim())
+          .slice(-20)
+          .map((m) => ({
+            autor: m.autor === "cliente" ? ("cliente" as const) : ("vendedor" as const),
+            texto: m.texto.trim().slice(0, 4000),
+          }))
+      : [];
     return {
       leadId: data.leadId,
       canal: data.canal === "email" ? "email" : "whatsapp",
       etapa: data.etapa && etapas.includes(data.etapa) ? data.etapa : undefined,
+      historico,
     };
   })
   .handler(async ({ data, context }): Promise<{ texto: string }> => {
