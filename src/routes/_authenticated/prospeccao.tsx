@@ -113,12 +113,26 @@ function ProspeccaoPage() {
           <p className="text-sm text-muted-foreground">{results.length} resultados</p>
           {results.map((place) => {
             const isAdded = added.has(place.place_id);
+            const melhorias = pontosParaMelhorar({
+              rating: place.rating,
+              totalAvaliacoes: place.total_avaliacoes,
+              hasWebsite: !!place.website,
+              hasTelefone: !!place.telefone,
+            });
             return (
               <Card key={place.place_id}>
-                <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0 space-y-1">
+                <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold text-foreground">{place.nome_empresa}</h3>
+                      <a
+                        href={place.perfil_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 font-semibold text-foreground hover:text-action hover:underline"
+                      >
+                        {place.nome_empresa}
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      </a>
                       <ScoreBadge score={place.score_seo} />
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -146,13 +160,31 @@ function ProspeccaoPage() {
                           {place.telefone}
                         </a>
                       )}
-                      {place.website && (
-                        <span className="inline-flex items-center gap-1">
+                      {place.website ? (
+                        <a
+                          href={place.website}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 hover:text-action hover:underline"
+                        >
                           <Globe className="h-3 w-3" />
                           Website
-                        </span>
-                      )}
+                        </a>
+                      ) : null}
                     </div>
+                    {melhorias.length > 0 && (
+                      <div className="rounded-md border border-warning/30 bg-warning/5 p-2">
+                        <p className="mb-1 inline-flex items-center gap-1 text-xs font-medium text-warning">
+                          <AlertTriangle className="h-3 w-3" />
+                          Pontos a melhorar ({melhorias.length})
+                        </p>
+                        <ul className="list-inside list-disc space-y-0.5 text-xs text-muted-foreground">
+                          {melhorias.map((m) => (
+                            <li key={m}>{m}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                   <Button
                     variant={isAdded ? "secondary" : "action"}
