@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,6 +11,9 @@ import {
   MapPin,
   CalendarClock,
   MessageSquarePlus,
+  Send,
+  Bot,
+  User as UserIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -33,6 +36,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScoreBadge } from "@/components/score-badge";
 import { whatsappLink } from "@/lib/utils";
+
+type MensagemTurno = { autor: "vendedor" | "cliente"; texto: string };
 
 type Lead = Tables<"leads">;
 type EtapaFunil = "novo" | "contato" | "proposta" | "fechado";
