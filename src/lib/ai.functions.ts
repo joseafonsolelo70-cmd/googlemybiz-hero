@@ -3,10 +3,16 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type EtapaFunil = "novo" | "contato" | "proposta" | "fechado";
 
+interface MensagemTurno {
+  autor: "vendedor" | "cliente";
+  texto: string;
+}
+
 interface AbordagemInput {
   leadId: string;
   canal: "whatsapp" | "email";
   etapa?: EtapaFunil;
+  historico?: MensagemTurno[];
 }
 
 const GEMINI_MODEL = "gemini-2.5-flash";
