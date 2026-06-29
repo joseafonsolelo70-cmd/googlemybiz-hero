@@ -11,6 +11,7 @@ export interface PlaceResult {
   rating: number | null;
   total_avaliacoes: number;
   score_seo: number;
+  perfil_url: string;
 }
 
 interface SearchInput {
@@ -20,12 +21,29 @@ interface SearchInput {
 
 interface SerpMapsResult {
   place_id?: string;
+  data_id?: string;
   title?: string;
   address?: string;
   phone?: string;
   website?: string;
   rating?: number;
   reviews?: number;
+}
+
+/**
+ * Constrói o link para o perfil da empresa no Google Maps.
+ * Usa o place_id real quando disponível; caso contrário pesquisa pelo nome/endereço.
+ */
+function buildPerfilUrl(
+  placeId: string | undefined,
+  nome: string,
+  endereco: string | null,
+): string {
+  if (placeId && placeId.startsWith("ChIJ")) {
+    return `https://www.google.com/maps/place/?q=place_id:${placeId}`;
+  }
+  const termo = [nome, endereco].filter(Boolean).join(" ");
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(termo)}`;
 }
 
 async function searchViaSerpApi(
@@ -88,10 +106,12 @@ async function searchViaSerpApi(
     const website = p.website ?? null;
     const rating = typeof p.rating === "number" ? p.rating : null;
     const total = typeof p.reviews === "number" ? p.reviews : 0;
+    const nome = p.title ?? "Sem nome";
+    const endereco = p.address ?? null;
     return {
       place_id: p.place_id ?? `serp-${i}-${p.title ?? "sem-nome"}`,
-      nome_empresa: p.title ?? "Sem nome",
-      endereco: p.address ?? null,
+      nome_empresa: nome,
+      endereco,
       telefone,
       website,
       rating,
@@ -102,6 +122,7 @@ async function searchViaSerpApi(
         hasWebsite: !!website,
         hasTelefone: !!telefone,
       }),
+      perfil_url: buildPerfilUrl(p.place_id, nome, endereco),
     };
   });
 }
@@ -164,6 +185,7 @@ async function searchViaGooglePlaces(
         hasWebsite: !!website,
         hasTelefone: !!telefone,
       }),
+      perfil_url: buildPerfilUrl(p.id, p.displayName?.text ?? "Sem nome", p.formattedAddress ?? null),
     };
   });
 }
