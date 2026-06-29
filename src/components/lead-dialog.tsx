@@ -168,12 +168,8 @@ export function LeadDialog({
 
   if (!lead) return null;
 
-  const copy = () => {
-    navigator.clipboard.writeText(abordagem || lead.abordagem_ia || "");
-    toast.success("Copiado!");
-  };
+  const temConversa = conversa.length > 0;
 
-  const currentText = abordagem || lead.abordagem_ia || "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
