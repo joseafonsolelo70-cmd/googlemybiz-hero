@@ -106,10 +106,12 @@ async function searchViaSerpApi(
     const website = p.website ?? null;
     const rating = typeof p.rating === "number" ? p.rating : null;
     const total = typeof p.reviews === "number" ? p.reviews : 0;
+    const nome = p.title ?? "Sem nome";
+    const endereco = p.address ?? null;
     return {
       place_id: p.place_id ?? `serp-${i}-${p.title ?? "sem-nome"}`,
-      nome_empresa: p.title ?? "Sem nome",
-      endereco: p.address ?? null,
+      nome_empresa: nome,
+      endereco,
       telefone,
       website,
       rating,
@@ -120,6 +122,7 @@ async function searchViaSerpApi(
         hasWebsite: !!website,
         hasTelefone: !!telefone,
       }),
+      perfil_url: buildPerfilUrl(p.place_id, nome, endereco),
     };
   });
 }
