@@ -185,6 +185,7 @@ async function searchViaGooglePlaces(
         hasWebsite: !!website,
         hasTelefone: !!telefone,
       }),
+      perfil_url: buildPerfilUrl(p.id, p.displayName?.text ?? "Sem nome", p.formattedAddress ?? null),
     };
   });
 }
