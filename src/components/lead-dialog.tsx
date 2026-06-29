@@ -244,44 +244,134 @@ export function LeadDialog({
                 ))}
               </div>
             </div>
-            <div className="flex gap-2">
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Canal</Label>
+              <div className="flex gap-1.5">
+                {(["whatsapp", "email"] as const).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCanal(c)}
+                    className={`flex-1 rounded-md border px-2 py-1.5 text-xs font-medium capitalize transition-colors ${
+                      canal === c
+                        ? "border-action bg-action/10 text-action"
+                        : "border-border text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    {c === "whatsapp" ? "WhatsApp" : "E-mail"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Conversa */}
+            {temConversa ? (
+              <div className="space-y-2 rounded-md border bg-muted/20 p-2">
+                {conversa.map((m, i) => (
+                  <div
+                    key={i}
+                    className={`flex gap-2 ${m.autor === "cliente" ? "flex-row-reverse" : ""}`}
+                  >
+                    <div
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                        m.autor === "vendedor"
+                          ? "bg-action/15 text-action"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {m.autor === "vendedor" ? (
+                        <Bot className="h-3.5 w-3.5" />
+                      ) : (
+                        <UserIcon className="h-3.5 w-3.5" />
+                      )}
+                    </div>
+                    <div
+                      className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                        m.autor === "vendedor"
+                          ? "bg-card text-foreground"
+                          : "bg-action text-action-foreground"
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap break-words">{m.texto}</p>
+                      {m.autor === "vendedor" && (
+                        <button
+                          type="button"
+                          onClick={() => copyTexto(m.texto)}
+                          className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-action"
+                        >
+                          <Copy className="h-3 w-3" /> Copiar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {gerarMutation.isPending && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> A IA está a escrever...
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="rounded-md border border-dashed bg-muted/10 p-3 text-center text-xs text-muted-foreground">
+                Gere a primeira abordagem e depois diga aqui o que o cliente respondeu — a IA cria a
+                resposta certa para enviar.
+              </p>
+            )}
+
+            {/* Ações */}
+            {!temConversa ? (
               <Button
                 variant="action"
                 size="sm"
-                className="flex-1"
+                className="w-full"
                 disabled={gerarMutation.isPending}
-                onClick={() => gerarMutation.mutate("whatsapp")}
+                onClick={gerarPrimeira}
               >
                 {gerarMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Sparkles className="h-4 w-4" />
                 )}
-                WhatsApp
+                Gerar primeira abordagem
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                disabled={gerarMutation.isPending}
-                onClick={() => gerarMutation.mutate("email")}
-              >
-                <Sparkles className="h-4 w-4" />
-                E-mail
-              </Button>
-            </div>
-            <Textarea
-              value={currentText}
-              onChange={(e) => setAbordagem(e.target.value)}
-              placeholder="Clique em WhatsApp ou E-mail para gerar a abordagem..."
-              rows={8}
-            />
-            {currentText && (
-              <Button variant="secondary" size="sm" onClick={copy} className="w-full">
-                <Copy className="h-4 w-4" /> Copiar texto
-              </Button>
+            ) : (
+              <div className="space-y-2">
+                <Textarea
+                  value={clienteInput}
+                  onChange={(e) => setClienteInput(e.target.value)}
+                  placeholder="O que o cliente respondeu? Ex.: 'Quanto custa?' ou 'Já tenho quem faz isso'"
+                  rows={3}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="action"
+                    size="sm"
+                    className="flex-1"
+                    disabled={gerarMutation.isPending || !clienteInput.trim()}
+                    onClick={responder}
+                  >
+                    {gerarMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    Gerar resposta da IA
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={gerarMutation.isPending}
+                    onClick={gerarPrimeira}
+                    title="Recomeçar a conversa com uma nova abordagem"
+                  >
+                    <Sparkles className="h-4 w-4" /> Recomeçar
+                  </Button>
+                </div>
+              </div>
             )}
           </TabsContent>
+
 
           <TabsContent value="followup" className="space-y-3 pt-3">
             <Label htmlFor="followup">Próximo lembrete</Label>
