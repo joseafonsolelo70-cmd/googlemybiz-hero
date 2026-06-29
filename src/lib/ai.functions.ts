@@ -100,7 +100,20 @@ Dados da empresa:
 - Tem website: ${lead.website ? "sim" : "não"}
 - Score SEO local (0-100): ${lead.score_seo ?? 0}
 
-${data.canal === "email" ? "Inclua uma linha de assunto na primeira linha." : "Mensagem direta de WhatsApp, com emojis moderados."}`;
+${data.canal === "email" ? "Inclua uma linha de assunto na primeira linha." : "Mensagem direta de WhatsApp, com emojis moderados."}
+
+${data.historico.length > 0 ? "A seguir está a conversa já trocada com este cliente. Gere apenas a próxima mensagem a enviar." : ""}`;
+
+    // Constrói o histórico da conversa: vendedor -> model, cliente -> user.
+    const contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }> = [
+      { role: "user", parts: [{ text: userPrompt }] },
+    ];
+    for (const m of data.historico) {
+      contents.push({
+        role: m.autor === "vendedor" ? "model" : "user",
+        parts: [{ text: m.texto }],
+      });
+    }
 
     const geminiKey = process.env.GEMINI_API_KEY;
     if (!geminiKey) {
