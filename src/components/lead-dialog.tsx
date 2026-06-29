@@ -61,12 +61,25 @@ export function LeadDialog({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const gerar = useServerFn(gerarAbordagem);
-  const [abordagem, setAbordagem] = useState("");
+  const [conversa, setConversa] = useState<MensagemTurno[]>([]);
+  const [clienteInput, setClienteInput] = useState("");
+  const [canal, setCanal] = useState<"whatsapp" | "email">("whatsapp");
   const [followup, setFollowup] = useState("");
   const [nota, setNota] = useState("");
   const [etapa, setEtapa] = useState<EtapaFunil>(
     (lead?.status_funil as EtapaFunil | null) ?? "novo",
   );
+
+  // Reinicia a conversa ao abrir/trocar de lead, recuperando a última abordagem salva.
+  useEffect(() => {
+    if (lead && open) {
+      setConversa(
+        lead.abordagem_ia ? [{ autor: "vendedor", texto: lead.abordagem_ia }] : [],
+      );
+      setClienteInput("");
+      setEtapa((lead.status_funil as EtapaFunil | null) ?? "novo");
+    }
+  }, [lead, open]);
 
   const { data: interacoes } = useQuery({
     queryKey: ["interacoes", lead?.id],
@@ -83,16 +96,42 @@ export function LeadDialog({
   });
 
   const gerarMutation = useMutation({
-    mutationFn: (canal: "whatsapp" | "email") =>
-      gerar({ data: { leadId: lead!.id, canal, etapa } }),
-    onSuccess: async (res) => {
-      setAbordagem(res.texto);
+    mutationFn: (historico: MensagemTurno[]) =>
+      gerar({ data: { leadId: lead!.id, canal, etapa, historico } }),
+    onSuccess: async (res, historico) => {
+      if (!res.texto.trim()) {
+        toast.error("A IA não retornou texto. Tente novamente.");
+        return;
+      }
+      const novaConversa: MensagemTurno[] = [
+        ...historico,
+        { autor: "vendedor", texto: res.texto },
+      ];
+      setConversa(novaConversa);
+      setClienteInput("");
       await supabase.from("leads").update({ abordagem_ia: res.texto }).eq("id", lead!.id);
       queryClient.invalidateQueries({ queryKey: ["leads"] });
-      toast.success("Abordagem gerada!");
+      toast.success("Mensagem gerada!");
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const gerarPrimeira = () => gerarMutation.mutate([]);
+
+  const responder = () => {
+    const texto = clienteInput.trim();
+    if (!texto) {
+      toast.error("Escreva o que o cliente respondeu.");
+      return;
+    }
+    gerarMutation.mutate([...conversa, { autor: "cliente", texto }]);
+  };
+
+  const copyTexto = (texto: string) => {
+    navigator.clipboard.writeText(texto);
+    toast.success("Copiado!");
+  };
+
 
   const followupMutation = useMutation({
     mutationFn: async () => {
