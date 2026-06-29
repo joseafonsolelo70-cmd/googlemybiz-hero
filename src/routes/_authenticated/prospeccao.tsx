@@ -2,10 +2,11 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Loader2, Plus, Check, Star, Phone, Globe, MapPin } from "lucide-react";
+import { Search, Loader2, Plus, Check, Star, Phone, Globe, MapPin, ExternalLink, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 import { searchPlaces, type PlaceResult } from "@/lib/maps.functions";
+import { pontosParaMelhorar } from "@/lib/seo";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
