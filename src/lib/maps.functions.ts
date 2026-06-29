@@ -11,6 +11,7 @@ export interface PlaceResult {
   rating: number | null;
   total_avaliacoes: number;
   score_seo: number;
+  perfil_url: string;
 }
 
 interface SearchInput {
@@ -20,12 +21,29 @@ interface SearchInput {
 
 interface SerpMapsResult {
   place_id?: string;
+  data_id?: string;
   title?: string;
   address?: string;
   phone?: string;
   website?: string;
   rating?: number;
   reviews?: number;
+}
+
+/**
+ * Constrói o link para o perfil da empresa no Google Maps.
+ * Usa o place_id real quando disponível; caso contrário pesquisa pelo nome/endereço.
+ */
+function buildPerfilUrl(
+  placeId: string | undefined,
+  nome: string,
+  endereco: string | null,
+): string {
+  if (placeId && placeId.startsWith("ChIJ")) {
+    return `https://www.google.com/maps/place/?q=place_id:${placeId}`;
+  }
+  const termo = [nome, endereco].filter(Boolean).join(" ");
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(termo)}`;
 }
 
 async function searchViaSerpApi(
