@@ -132,12 +132,7 @@ ${data.historico.length > 0 ? "A seguir está a conversa já trocada com este cl
           system_instruction: {
             parts: [{ text: SYSTEM_PROMPT(vendedor, empresa, etapa) }],
           },
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: userPrompt }],
-            },
-          ],
+          contents,
           generationConfig: {
             temperature: 0.8,
           },
