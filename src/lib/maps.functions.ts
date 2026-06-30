@@ -175,7 +175,7 @@ async function searchViaGooglePlaces(
       "Content-Type": "application/json",
       "X-Goog-Api-Key": apiKey,
       "X-Goog-FieldMask":
-        "places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.nationalPhoneNumber,places.rating,places.userRatingCount,places.websiteUri",
+        "places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.nationalPhoneNumber,places.rating,places.userRatingCount,places.websiteUri,places.types,places.primaryTypeDisplayName,places.editorialSummary,places.photos",
     },
     body: JSON.stringify({ textQuery, languageCode: "pt", maxResultCount: 20 }),
   });
