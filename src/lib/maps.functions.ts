@@ -12,6 +12,11 @@ export interface PlaceResult {
   total_avaliacoes: number;
   score_seo: number;
   perfil_url: string;
+  categorias: string[];
+  tem_fotos: boolean;
+  tem_descricao: boolean;
+  tem_atributos: boolean;
+  tem_categorias_secundarias: boolean;
 }
 
 interface SearchInput {
