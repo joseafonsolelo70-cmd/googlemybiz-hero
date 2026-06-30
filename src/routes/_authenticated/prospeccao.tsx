@@ -191,6 +191,34 @@ function ProspeccaoPage() {
                         </ul>
                       </div>
                     )}
+                    {place.categorias.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1">
+                        <Tag className="h-3 w-3 text-muted-foreground" />
+                        {place.categorias.slice(0, 4).map((c) => (
+                          <span
+                            key={c}
+                            className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+                          >
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      {ficha.map((item) => (
+                        <span
+                          key={item.label}
+                          className={`inline-flex items-center gap-1 text-xs ${item.ok ? "text-success" : "text-destructive"}`}
+                        >
+                          {item.ok ? (
+                            <CheckCircle2 className="h-3 w-3" />
+                          ) : (
+                            <XCircle className="h-3 w-3" />
+                          )}
+                          {item.label}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                   <Button
                     variant={isAdded ? "secondary" : "action"}
