@@ -119,6 +119,12 @@ function ProspeccaoPage() {
               hasWebsite: !!place.website,
               hasTelefone: !!place.telefone,
             });
+            const ficha = diagnosticoFicha({
+              temFotos: place.tem_fotos,
+              temDescricao: place.tem_descricao,
+              temAtributos: place.tem_atributos,
+              temCategoriasSecundarias: place.tem_categorias_secundarias,
+            });
             return (
               <Card key={place.place_id}>
                 <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
