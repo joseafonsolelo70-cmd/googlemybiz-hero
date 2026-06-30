@@ -33,6 +33,38 @@ interface SerpMapsResult {
   website?: string;
   rating?: number;
   reviews?: number;
+  type?: string;
+  types?: string[];
+  description?: string;
+  thumbnail?: string;
+  extensions?: Array<Record<string, string[]>>;
+}
+
+/**
+ * Resume os atributos (extensions) e categorias da ficha do Google.
+ */
+function resumirFicha(p: {
+  types?: string[];
+  type?: string;
+  description?: string;
+  thumbnail?: string;
+  extensions?: Array<Record<string, string[]>>;
+}) {
+  const categorias = (p.types && p.types.length > 0 ? p.types : p.type ? [p.type] : []).filter(
+    Boolean,
+  );
+  const totalAtributos = (p.extensions ?? []).reduce(
+    (acc, grupo) =>
+      acc + Object.values(grupo).reduce((a, arr) => a + (Array.isArray(arr) ? arr.length : 0), 0),
+    0,
+  );
+  return {
+    categorias,
+    tem_fotos: !!p.thumbnail,
+    tem_descricao: !!(p.description && p.description.trim()),
+    tem_atributos: totalAtributos > 0,
+    tem_categorias_secundarias: categorias.length > 1,
+  };
 }
 
 /**
