@@ -80,7 +80,10 @@ function PalavrasChavePage() {
               value={termo}
               onChange={(e) => setTermo(e.target.value)}
             />
-            <Select value={geo} onValueChange={setGeo}>
+            <Select
+              value={geo || "world"}
+              onValueChange={(v) => setGeo(v === "world" ? "" : v)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
