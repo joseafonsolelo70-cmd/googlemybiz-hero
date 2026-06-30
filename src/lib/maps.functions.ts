@@ -160,6 +160,7 @@ async function searchViaSerpApi(
         hasTelefone: !!telefone,
       }),
       perfil_url: buildPerfilUrl(p.place_id, nome, endereco),
+      ...resumirFicha(p),
     };
   });
 }
