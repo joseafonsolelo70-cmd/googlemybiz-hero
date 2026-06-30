@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProspeccaoRouteImport } from './routes/_authenticated/prospeccao'
+import { Route as AuthenticatedPalavrasChaveRouteImport } from './routes/_authenticated/palavras-chave'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated/crm'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
@@ -42,6 +43,12 @@ const AuthenticatedProspeccaoRoute = AuthenticatedProspeccaoRouteImport.update({
   path: '/prospeccao',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPalavrasChaveRoute =
+  AuthenticatedPalavrasChaveRouteImport.update({
+    id: '/palavras-chave',
+    path: '/palavras-chave',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -66,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/palavras-chave': typeof AuthenticatedPalavrasChaveRoute
   '/prospeccao': typeof AuthenticatedProspeccaoRoute
 }
 export interface FileRoutesByTo {
@@ -75,6 +83,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/palavras-chave': typeof AuthenticatedPalavrasChaveRoute
   '/prospeccao': typeof AuthenticatedProspeccaoRoute
 }
 export interface FileRoutesById {
@@ -86,6 +95,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/crm': typeof AuthenticatedCrmRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/palavras-chave': typeof AuthenticatedPalavrasChaveRoute
   '/_authenticated/prospeccao': typeof AuthenticatedProspeccaoRoute
 }
 export interface FileRouteTypes {
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/crm'
     | '/dashboard'
+    | '/palavras-chave'
     | '/prospeccao'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/crm'
     | '/dashboard'
+    | '/palavras-chave'
     | '/prospeccao'
   id:
     | '__root__'
@@ -116,6 +128,7 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes'
     | '/_authenticated/crm'
     | '/_authenticated/dashboard'
+    | '/_authenticated/palavras-chave'
     | '/_authenticated/prospeccao'
   fileRoutesById: FileRoutesById
 }
@@ -163,6 +176,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProspeccaoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/palavras-chave': {
+      id: '/_authenticated/palavras-chave'
+      path: '/palavras-chave'
+      fullPath: '/palavras-chave'
+      preLoaderRoute: typeof AuthenticatedPalavrasChaveRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -191,6 +211,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedCrmRoute: typeof AuthenticatedCrmRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedPalavrasChaveRoute: typeof AuthenticatedPalavrasChaveRoute
   AuthenticatedProspeccaoRoute: typeof AuthenticatedProspeccaoRoute
 }
 
@@ -198,6 +219,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedCrmRoute: AuthenticatedCrmRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedPalavrasChaveRoute: AuthenticatedPalavrasChaveRoute,
   AuthenticatedProspeccaoRoute: AuthenticatedProspeccaoRoute,
 }
 

@@ -12,6 +12,11 @@ export interface PlaceResult {
   total_avaliacoes: number;
   score_seo: number;
   perfil_url: string;
+  categorias: string[];
+  tem_fotos: boolean;
+  tem_descricao: boolean;
+  tem_atributos: boolean;
+  tem_categorias_secundarias: boolean;
 }
 
 interface SearchInput {
@@ -28,6 +33,38 @@ interface SerpMapsResult {
   website?: string;
   rating?: number;
   reviews?: number;
+  type?: string;
+  types?: string[];
+  description?: string;
+  thumbnail?: string;
+  extensions?: Array<Record<string, string[]>>;
+}
+
+/**
+ * Resume os atributos (extensions) e categorias da ficha do Google.
+ */
+function resumirFicha(p: {
+  types?: string[];
+  type?: string;
+  description?: string;
+  thumbnail?: string;
+  extensions?: Array<Record<string, string[]>>;
+}) {
+  const categorias = (p.types && p.types.length > 0 ? p.types : p.type ? [p.type] : []).filter(
+    Boolean,
+  );
+  const totalAtributos = (p.extensions ?? []).reduce(
+    (acc, grupo) =>
+      acc + Object.values(grupo).reduce((a, arr) => a + (Array.isArray(arr) ? arr.length : 0), 0),
+    0,
+  );
+  return {
+    categorias,
+    tem_fotos: !!p.thumbnail,
+    tem_descricao: !!(p.description && p.description.trim()),
+    tem_atributos: totalAtributos > 0,
+    tem_categorias_secundarias: categorias.length > 1,
+  };
 }
 
 /**
@@ -123,6 +160,7 @@ async function searchViaSerpApi(
         hasTelefone: !!telefone,
       }),
       perfil_url: buildPerfilUrl(p.place_id, nome, endereco),
+      ...resumirFicha(p),
     };
   });
 }
@@ -137,7 +175,7 @@ async function searchViaGooglePlaces(
       "Content-Type": "application/json",
       "X-Goog-Api-Key": apiKey,
       "X-Goog-FieldMask":
-        "places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.nationalPhoneNumber,places.rating,places.userRatingCount,places.websiteUri",
+        "places.id,places.displayName,places.formattedAddress,places.internationalPhoneNumber,places.nationalPhoneNumber,places.rating,places.userRatingCount,places.websiteUri,places.types,places.primaryTypeDisplayName,places.editorialSummary,places.photos",
     },
     body: JSON.stringify({ textQuery, languageCode: "pt", maxResultCount: 20 }),
   });
@@ -163,6 +201,10 @@ async function searchViaGooglePlaces(
       rating?: number;
       userRatingCount?: number;
       websiteUri?: string;
+      types?: string[];
+      primaryTypeDisplayName?: { text?: string };
+      editorialSummary?: { text?: string };
+      photos?: Array<unknown>;
     }>;
   };
 
@@ -186,6 +228,12 @@ async function searchViaGooglePlaces(
         hasTelefone: !!telefone,
       }),
       perfil_url: buildPerfilUrl(p.id, p.displayName?.text ?? "Sem nome", p.formattedAddress ?? null),
+      ...resumirFicha({
+        types: p.types,
+        type: p.primaryTypeDisplayName?.text,
+        description: p.editorialSummary?.text,
+        thumbnail: p.photos && p.photos.length > 0 ? "x" : undefined,
+      }),
     };
   });
 }

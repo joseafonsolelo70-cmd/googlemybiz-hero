@@ -2,11 +2,11 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Loader2, Plus, Check, Star, Phone, Globe, MapPin, ExternalLink, AlertTriangle } from "lucide-react";
+import { Search, Loader2, Plus, Check, Star, Phone, Globe, MapPin, ExternalLink, AlertTriangle, CheckCircle2, XCircle, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 import { searchPlaces, type PlaceResult } from "@/lib/maps.functions";
-import { pontosParaMelhorar } from "@/lib/seo";
+import { pontosParaMelhorar, diagnosticoFicha } from "@/lib/seo";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -119,6 +119,12 @@ function ProspeccaoPage() {
               hasWebsite: !!place.website,
               hasTelefone: !!place.telefone,
             });
+            const ficha = diagnosticoFicha({
+              temFotos: place.tem_fotos,
+              temDescricao: place.tem_descricao,
+              temAtributos: place.tem_atributos,
+              temCategoriasSecundarias: place.tem_categorias_secundarias,
+            });
             return (
               <Card key={place.place_id}>
                 <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
@@ -185,6 +191,34 @@ function ProspeccaoPage() {
                         </ul>
                       </div>
                     )}
+                    {place.categorias.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1">
+                        <Tag className="h-3 w-3 text-muted-foreground" />
+                        {place.categorias.slice(0, 4).map((c) => (
+                          <span
+                            key={c}
+                            className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+                          >
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      {ficha.map((item) => (
+                        <span
+                          key={item.label}
+                          className={`inline-flex items-center gap-1 text-xs ${item.ok ? "text-success" : "text-destructive"}`}
+                        >
+                          {item.ok ? (
+                            <CheckCircle2 className="h-3 w-3" />
+                          ) : (
+                            <XCircle className="h-3 w-3" />
+                          )}
+                          {item.label}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                   <Button
                     variant={isAdded ? "secondary" : "action"}

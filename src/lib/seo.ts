@@ -66,3 +66,28 @@ export function pontosParaMelhorar(input: SeoInput): string[] {
 
   return pontos;
 }
+
+export interface FichaInput {
+  temFotos: boolean;
+  temDescricao: boolean;
+  temAtributos: boolean;
+  temCategoriasSecundarias: boolean;
+}
+
+export interface FichaItem {
+  label: string;
+  ok: boolean;
+}
+
+/**
+ * Diagnóstico da ficha do Google Meu Negócio — o que está completo e o que falta.
+ * Cada item "não ok" é um argumento de venda para otimização da ficha.
+ */
+export function diagnosticoFicha(input: FichaInput): FichaItem[] {
+  return [
+    { label: "Tem fotos no perfil", ok: input.temFotos },
+    { label: "Tem descrição da empresa", ok: input.temDescricao },
+    { label: "Tem atributos preenchidos", ok: input.temAtributos },
+    { label: "Tem categorias secundárias/terciárias", ok: input.temCategoriasSecundarias },
+  ];
+}
