@@ -228,6 +228,12 @@ async function searchViaGooglePlaces(
         hasTelefone: !!telefone,
       }),
       perfil_url: buildPerfilUrl(p.id, p.displayName?.text ?? "Sem nome", p.formattedAddress ?? null),
+      ...resumirFicha({
+        types: p.types,
+        type: p.primaryTypeDisplayName?.text,
+        description: p.editorialSummary?.text,
+        thumbnail: p.photos && p.photos.length > 0 ? "x" : undefined,
+      }),
     };
   });
 }
