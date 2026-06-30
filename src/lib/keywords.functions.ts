@@ -84,7 +84,7 @@ export const pesquisarPalavrasChave = createServerFn({ method: "POST" })
       throw new Error("A pesquisa de palavras-chave não está configurada (SerpAPI em falta).");
     }
 
-    const baseGeo = data.geo ? { geo: data.geo } : {};
+    const baseGeo: Record<string, string> = data.geo ? { geo: data.geo } : {};
 
     const [semana, mes, ano, related] = await Promise.all([
       fetchTrends({ q: data.termo, data_type: "TIMESERIES", date: "now 7-d", ...baseGeo }, apiKey),
