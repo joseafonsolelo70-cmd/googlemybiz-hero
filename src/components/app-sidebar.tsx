@@ -5,6 +5,7 @@ import {
   KanbanSquare,
   Settings,
   Target,
+  KeyRound,
 } from "lucide-react";
 
 import {
@@ -23,6 +24,7 @@ import {
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Prospecção Maps", url: "/prospeccao", icon: MapPinned },
+  { title: "Palavras-chave", url: "/palavras-chave", icon: KeyRound },
   { title: "CRM de Leads", url: "/crm", icon: KanbanSquare },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
