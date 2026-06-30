@@ -201,6 +201,10 @@ async function searchViaGooglePlaces(
       rating?: number;
       userRatingCount?: number;
       websiteUri?: string;
+      types?: string[];
+      primaryTypeDisplayName?: { text?: string };
+      editorialSummary?: { text?: string };
+      photos?: Array<unknown>;
     }>;
   };
 
