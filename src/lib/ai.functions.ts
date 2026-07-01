@@ -115,44 +115,108 @@ ${data.historico.length > 0 ? "A seguir está a conversa já trocada com este cl
       });
     }
 
-    const geminiKey = process.env.GEMINI_API_KEY;
-    if (!geminiKey) {
-      throw new Error("Chave do Gemini não configurada. Defina a GEMINI_API_KEY.");
+    const systemText = SYSTEM_PROMPT(vendedor, empresa, etapa);
+    const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+    // 1) Preferir o Lovable AI Gateway (sem limites do plano gratuito do Gemini).
+    const lovableKey = process.env.LOVABLE_API_KEY;
+    if (lovableKey) {
+      const messages = [
+        { role: "system" as const, content: systemText },
+        ...contents.map((c) => ({
+          role: c.role === "model" ? ("assistant" as const) : ("user" as const),
+          content: c.parts.map((p) => p.text).join(""),
+        })),
+      ];
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${lovableKey}`,
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages,
+            temperature: 0.8,
+          }),
+        });
+
+        if (r.ok) {
+          const j = (await r.json()) as {
+            choices?: Array<{ message?: { content?: string } }>;
+          };
+          const texto = j.choices?.[0]?.message?.content?.trim() ?? "";
+          if (texto) return { texto };
+          break; // resposta vazia — tentar o fallback direto
+        }
+
+        if (r.status === 429 && attempt < 2) {
+          await sleep(1200 * (attempt + 1));
+          continue;
+        }
+        if (r.status === 402) {
+          throw new Error("Créditos de IA esgotados. Adicione créditos para continuar.");
+        }
+        // outros erros: cair para o fallback direto do Gemini
+        const body = await r.text();
+        console.error("Lovable AI Gateway error", r.status, body);
+        break;
+      }
     }
 
-    const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": geminiKey,
-        },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: SYSTEM_PROMPT(vendedor, empresa, etapa) }],
-          },
-          contents,
-          generationConfig: {
-            temperature: 0.8,
-          },
-        }),
-      },
-    );
+    // 2) Fallback: chamada direta ao Gemini com repetição em caso de 429.
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (!geminiKey) {
+      throw new Error("Não foi possível gerar a abordagem. Tente novamente em instantes.");
+    }
 
-    if (!r.ok) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": geminiKey,
+          },
+          body: JSON.stringify({
+            system_instruction: {
+              parts: [{ text: systemText }],
+            },
+            contents,
+            generationConfig: {
+              temperature: 0.8,
+            },
+          }),
+        },
+      );
+
+      if (r.ok) {
+        const j = (await r.json()) as {
+          candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+        };
+        const texto =
+          j.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim() ?? "";
+        return { texto };
+      }
+
+      if (r.status === 429 && attempt < 2) {
+        await sleep(1500 * (attempt + 1));
+        continue;
+      }
+
       const body = await r.text();
       console.error("Gemini error", r.status, body);
-      if (r.status === 429) throw new Error("Limite de pedidos atingido. Tente novamente em instantes.");
+      if (r.status === 429) {
+        throw new Error("Muitos pedidos em pouco tempo. Aguarde alguns segundos e tente de novo.");
+      }
       if (r.status === 400 || r.status === 401 || r.status === 403) {
         throw new Error("Falha de autenticação com o Gemini. Verifique a GEMINI_API_KEY.");
       }
-      throw new Error("Falha ao gerar abordagem com o Gemini. Tente novamente.");
+      throw new Error("Falha ao gerar abordagem. Tente novamente.");
     }
 
-    const j = (await r.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-    };
-    const texto = j.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim() ?? "";
-    return { texto };
+    throw new Error("Muitos pedidos em pouco tempo. Aguarde alguns segundos e tente de novo.");
   });
