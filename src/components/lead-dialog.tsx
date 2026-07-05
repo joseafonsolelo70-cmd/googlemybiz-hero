@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -14,6 +14,8 @@ import {
   Send,
   Bot,
   User as UserIcon,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -37,7 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScoreBadge } from "@/components/score-badge";
 import { whatsappLink } from "@/lib/utils";
 
-type MensagemTurno = { autor: "vendedor" | "cliente"; texto: string };
+type MensagemTurno = { autor: "vendedor" | "cliente"; texto: string; imagens?: string[] };
 
 type Lead = Tables<"leads">;
 type EtapaFunil = "novo" | "contato" | "proposta" | "fechado";
@@ -63,6 +65,8 @@ export function LeadDialog({
   const gerar = useServerFn(gerarAbordagem);
   const [conversa, setConversa] = useState<MensagemTurno[]>([]);
   const [clienteInput, setClienteInput] = useState("");
+  const [anexos, setAnexos] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [canal, setCanal] = useState<"whatsapp" | "email">("whatsapp");
   const [followup, setFollowup] = useState("");
   const [nota, setNota] = useState("");
@@ -77,6 +81,7 @@ export function LeadDialog({
         lead.abordagem_ia ? [{ autor: "vendedor", texto: lead.abordagem_ia }] : [],
       );
       setClienteInput("");
+      setAnexos([]);
       setEtapa((lead.status_funil as EtapaFunil | null) ?? "novo");
     }
   }, [lead, open]);
@@ -109,6 +114,7 @@ export function LeadDialog({
       ];
       setConversa(novaConversa);
       setClienteInput("");
+      setAnexos([]);
       await supabase.from("leads").update({ abordagem_ia: res.texto }).eq("id", lead!.id);
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       toast.success("Mensagem gerada!");
@@ -120,12 +126,45 @@ export function LeadDialog({
 
   const responder = () => {
     const texto = clienteInput.trim();
-    if (!texto) {
-      toast.error("Escreva o que o cliente respondeu.");
+    if (!texto && anexos.length === 0) {
+      toast.error("Escreva o que o cliente respondeu ou anexe uma imagem.");
       return;
     }
-    gerarMutation.mutate([...conversa, { autor: "cliente", texto }]);
+    gerarMutation.mutate([...conversa, { autor: "cliente", texto, imagens: anexos }]);
   };
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const restantes = 4 - anexos.length;
+    if (restantes <= 0) {
+      toast.error("Máximo de 4 imagens por mensagem.");
+      return;
+    }
+    const selecionados = Array.from(files).slice(0, restantes);
+    const novos: string[] = [];
+    for (const file of selecionados) {
+      if (!file.type.startsWith("image/")) {
+        toast.error(`"${file.name}" não é uma imagem.`);
+        continue;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`"${file.name}" é maior que 5 MB.`);
+        continue;
+      }
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      novos.push(dataUrl);
+    }
+    if (novos.length) setAnexos((prev) => [...prev, ...novos]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removerAnexo = (idx: number) =>
+    setAnexos((prev) => prev.filter((_, i) => i !== idx));
 
   const copyTexto = (texto: string) => {
     navigator.clipboard.writeText(texto);
@@ -293,7 +332,19 @@ export function LeadDialog({
                           : "bg-action text-action-foreground"
                       }`}
                     >
-                      <p className="whitespace-pre-wrap break-words">{m.texto}</p>
+                      {m.imagens && m.imagens.length > 0 && (
+                        <div className="mb-1 flex flex-wrap gap-1.5">
+                          {m.imagens.map((src, idx) => (
+                            <img
+                              key={idx}
+                              src={src}
+                              alt={`Anexo ${idx + 1}`}
+                              className="h-20 w-20 rounded-md border border-border object-cover"
+                            />
+                          ))}
+                        </div>
+                      )}
+                      {m.texto && <p className="whitespace-pre-wrap break-words">{m.texto}</p>}
                       {m.autor === "vendedor" && (
                         <button
                           type="button"
@@ -343,12 +394,57 @@ export function LeadDialog({
                   placeholder="O que o cliente respondeu? Ex.: 'Quanto custa?' ou 'Já tenho quem faz isso'"
                   rows={3}
                 />
+
+                {/* Pré-visualização dos anexos */}
+                {anexos.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {anexos.map((src, idx) => (
+                      <div key={idx} className="relative">
+                        <img
+                          src={src}
+                          alt={`Anexo ${idx + 1}`}
+                          className="h-16 w-16 rounded-md border border-border object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removerAnexo(idx)}
+                          className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow"
+                          aria-label="Remover anexo"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleFiles(e.target.files)}
+                />
+
                 <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={gerarMutation.isPending || anexos.length >= 4}
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Anexar captura de ecrã ou imagem"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="action"
                     size="sm"
                     className="flex-1"
-                    disabled={gerarMutation.isPending || !clienteInput.trim()}
+                    disabled={
+                      gerarMutation.isPending ||
+                      (!clienteInput.trim() && anexos.length === 0)
+                    }
                     onClick={responder}
                   >
                     {gerarMutation.isPending ? (

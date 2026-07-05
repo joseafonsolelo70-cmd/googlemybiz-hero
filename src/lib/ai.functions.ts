@@ -6,6 +6,7 @@ type EtapaFunil = "novo" | "contato" | "proposta" | "fechado";
 interface MensagemTurno {
   autor: "vendedor" | "cliente";
   texto: string;
+  imagens?: string[]; // data URLs (data:image/...;base64,...) anexadas pelo cliente/vendedor
 }
 
 interface AbordagemInput {
@@ -36,6 +37,7 @@ ${ETAPA_OBJETIVO[etapa]}
 
 MODO CONVERSA: Esta pode ser uma negociação em andamento. As mensagens marcadas como "model" são mensagens que VOCÊ (o vendedor) já enviou; as mensagens "user" depois da primeira são RESPOSTAS REAIS DO CLIENTE. Quando o cliente responder, gere APENAS a próxima mensagem que o vendedor deve enviar, reagindo diretamente ao que o cliente disse (dúvidas, objeções, preço, interesse, recusa). Não repita mensagens anteriores e não invente o que o cliente disse.
 Responda SEMPRE apenas com o texto pronto para o vendedor copiar e enviar — sem explicações, sem aspas, sem rótulos como "Mensagem:".
+IMAGENS: podem ser anexadas capturas de ecrã ou ficheiros (ex.: a ficha do Google do cliente, a conversa do WhatsApp, um site). Analise essas imagens e use o que observa nelas (o que o cliente escreveu, pontos fracos da ficha, oportunidades) para gerar a melhor mensagem possível.
 
 Princípios de persuasão a usar com naturalidade: prova social (avaliações/rating), benefício concreto, escassez/urgência suave e chamada à ação clara — sem soar a robô nem agressivo.
 Use o nome da empresa do cliente e cite oportunidades reais com base nos dados (avaliações, rating, presença online).
@@ -49,11 +51,26 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
     const etapas: EtapaFunil[] = ["novo", "contato", "proposta", "fechado"];
     const historico = Array.isArray(data.historico)
       ? data.historico
-          .filter((m) => m && typeof m.texto === "string" && m.texto.trim())
+          .filter(
+            (m) =>
+              m &&
+              ((typeof m.texto === "string" && m.texto.trim()) ||
+                (Array.isArray(m.imagens) && m.imagens.length > 0)),
+          )
           .slice(-20)
           .map((m) => ({
             autor: m.autor === "cliente" ? ("cliente" as const) : ("vendedor" as const),
-            texto: m.texto.trim().slice(0, 4000),
+            texto: typeof m.texto === "string" ? m.texto.trim().slice(0, 4000) : "",
+            imagens: Array.isArray(m.imagens)
+              ? m.imagens
+                  .filter(
+                    (img) =>
+                      typeof img === "string" &&
+                      img.startsWith("data:image/") &&
+                      img.length < 8_000_000,
+                  )
+                  .slice(0, 4)
+              : [],
           }))
       : [];
     return {
@@ -105,15 +122,23 @@ ${data.canal === "email" ? "Inclua uma linha de assunto na primeira linha." : "M
 ${data.historico.length > 0 ? "A seguir está a conversa já trocada com este cliente. Gere apenas a próxima mensagem a enviar." : ""}`;
 
     // Constrói o histórico da conversa: vendedor -> model, cliente -> user.
-    const contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }> = [
-      { role: "user", parts: [{ text: userPrompt }] },
+    const contents: Array<{ role: "user" | "model"; texto: string; imagens: string[] }> = [
+      { role: "user", texto: userPrompt, imagens: [] },
     ];
     for (const m of data.historico) {
       contents.push({
         role: m.autor === "vendedor" ? "model" : "user",
-        parts: [{ text: m.texto }],
+        texto: m.texto,
+        imagens: m.imagens ?? [],
       });
     }
+
+    // Divide uma data URL em mimetype + base64 puro (para o Gemini direto).
+    const parseDataUrl = (url: string): { mime: string; b64: string } | null => {
+      const match = /^data:([^;]+);base64,(.+)$/.exec(url);
+      if (!match) return null;
+      return { mime: match[1], b64: match[2] };
+    };
 
     const systemText = SYSTEM_PROMPT(vendedor, empresa, etapa);
     const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -123,10 +148,21 @@ ${data.historico.length > 0 ? "A seguir está a conversa já trocada com este cl
     if (lovableKey) {
       const messages = [
         { role: "system" as const, content: systemText },
-        ...contents.map((c) => ({
-          role: c.role === "model" ? ("assistant" as const) : ("user" as const),
-          content: c.parts.map((p) => p.text).join(""),
-        })),
+        ...contents.map((c) => {
+          const role = c.role === "model" ? ("assistant" as const) : ("user" as const);
+          if (c.imagens.length === 0) {
+            return { role, content: c.texto };
+          }
+          const parts: Array<
+            | { type: "text"; text: string }
+            | { type: "image_url"; image_url: { url: string } }
+          > = [];
+          if (c.texto) parts.push({ type: "text", text: c.texto });
+          for (const url of c.imagens) {
+            parts.push({ type: "image_url", image_url: { url } });
+          }
+          return { role, content: parts };
+        }),
       ];
 
       for (let attempt = 0; attempt < 3; attempt++) {
@@ -172,6 +208,20 @@ ${data.historico.length > 0 ? "A seguir está a conversa já trocada com este cl
       throw new Error("Não foi possível gerar a abordagem. Tente novamente em instantes.");
     }
 
+    // Mapeia o histórico para o formato de parts do Gemini (texto + inline_data).
+    const geminiContents = contents.map((c) => {
+      const parts: Array<
+        { text: string } | { inline_data: { mime_type: string; data: string } }
+      > = [];
+      if (c.texto) parts.push({ text: c.texto });
+      for (const url of c.imagens) {
+        const parsed = parseDataUrl(url);
+        if (parsed) parts.push({ inline_data: { mime_type: parsed.mime, data: parsed.b64 } });
+      }
+      if (parts.length === 0) parts.push({ text: "" });
+      return { role: c.role, parts };
+    });
+
     for (let attempt = 0; attempt < 3; attempt++) {
       const r = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
@@ -185,7 +235,7 @@ ${data.historico.length > 0 ? "A seguir está a conversa já trocada com este cl
             system_instruction: {
               parts: [{ text: systemText }],
             },
-            contents,
+            contents: geminiContents,
             generationConfig: {
               temperature: 0.8,
             },
