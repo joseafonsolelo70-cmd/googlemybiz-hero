@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -14,6 +14,8 @@ import {
   Send,
   Bot,
   User as UserIcon,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
