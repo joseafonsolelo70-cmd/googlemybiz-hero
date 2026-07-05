@@ -207,6 +207,20 @@ ${data.historico.length > 0 ? "A seguir está a conversa já trocada com este cl
       throw new Error("Não foi possível gerar a abordagem. Tente novamente em instantes.");
     }
 
+    // Mapeia o histórico para o formato de parts do Gemini (texto + inline_data).
+    const geminiContents = contents.map((c) => {
+      const parts: Array<
+        { text: string } | { inline_data: { mime_type: string; data: string } }
+      > = [];
+      if (c.texto) parts.push({ text: c.texto });
+      for (const url of c.imagens) {
+        const parsed = parseDataUrl(url);
+        if (parsed) parts.push({ inline_data: { mime_type: parsed.mime, data: parsed.b64 } });
+      }
+      if (parts.length === 0) parts.push({ text: "" });
+      return { role: c.role, parts };
+    });
+
     for (let attempt = 0; attempt < 3; attempt++) {
       const r = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
