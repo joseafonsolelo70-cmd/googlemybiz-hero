@@ -39,7 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScoreBadge } from "@/components/score-badge";
 import { whatsappLink } from "@/lib/utils";
 
-type MensagemTurno = { autor: "vendedor" | "cliente"; texto: string };
+type MensagemTurno = { autor: "vendedor" | "cliente"; texto: string; imagens?: string[] };
 
 type Lead = Tables<"leads">;
 type EtapaFunil = "novo" | "contato" | "proposta" | "fechado";
