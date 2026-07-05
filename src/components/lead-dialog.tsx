@@ -332,7 +332,19 @@ export function LeadDialog({
                           : "bg-action text-action-foreground"
                       }`}
                     >
-                      <p className="whitespace-pre-wrap break-words">{m.texto}</p>
+                      {m.imagens && m.imagens.length > 0 && (
+                        <div className="mb-1 flex flex-wrap gap-1.5">
+                          {m.imagens.map((src, idx) => (
+                            <img
+                              key={idx}
+                              src={src}
+                              alt={`Anexo ${idx + 1}`}
+                              className="h-20 w-20 rounded-md border border-border object-cover"
+                            />
+                          ))}
+                        </div>
+                      )}
+                      {m.texto && <p className="whitespace-pre-wrap break-words">{m.texto}</p>}
                       {m.autor === "vendedor" && (
                         <button
                           type="button"
