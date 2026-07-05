@@ -81,6 +81,7 @@ export function LeadDialog({
         lead.abordagem_ia ? [{ autor: "vendedor", texto: lead.abordagem_ia }] : [],
       );
       setClienteInput("");
+      setAnexos([]);
       setEtapa((lead.status_funil as EtapaFunil | null) ?? "novo");
     }
   }, [lead, open]);
