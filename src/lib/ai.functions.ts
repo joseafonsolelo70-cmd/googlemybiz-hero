@@ -50,11 +50,26 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
     const etapas: EtapaFunil[] = ["novo", "contato", "proposta", "fechado"];
     const historico = Array.isArray(data.historico)
       ? data.historico
-          .filter((m) => m && typeof m.texto === "string" && m.texto.trim())
+          .filter(
+            (m) =>
+              m &&
+              ((typeof m.texto === "string" && m.texto.trim()) ||
+                (Array.isArray(m.imagens) && m.imagens.length > 0)),
+          )
           .slice(-20)
           .map((m) => ({
             autor: m.autor === "cliente" ? ("cliente" as const) : ("vendedor" as const),
-            texto: m.texto.trim().slice(0, 4000),
+            texto: typeof m.texto === "string" ? m.texto.trim().slice(0, 4000) : "",
+            imagens: Array.isArray(m.imagens)
+              ? m.imagens
+                  .filter(
+                    (img) =>
+                      typeof img === "string" &&
+                      img.startsWith("data:image/") &&
+                      img.length < 8_000_000,
+                  )
+                  .slice(0, 4)
+              : [],
           }))
       : [];
     return {
