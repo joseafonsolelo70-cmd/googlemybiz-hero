@@ -394,12 +394,57 @@ export function LeadDialog({
                   placeholder="O que o cliente respondeu? Ex.: 'Quanto custa?' ou 'Já tenho quem faz isso'"
                   rows={3}
                 />
+
+                {/* Pré-visualização dos anexos */}
+                {anexos.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {anexos.map((src, idx) => (
+                      <div key={idx} className="relative">
+                        <img
+                          src={src}
+                          alt={`Anexo ${idx + 1}`}
+                          className="h-16 w-16 rounded-md border border-border object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removerAnexo(idx)}
+                          className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow"
+                          aria-label="Remover anexo"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleFiles(e.target.files)}
+                />
+
                 <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={gerarMutation.isPending || anexos.length >= 4}
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Anexar captura de ecrã ou imagem"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="action"
                     size="sm"
                     className="flex-1"
-                    disabled={gerarMutation.isPending || !clienteInput.trim()}
+                    disabled={
+                      gerarMutation.isPending ||
+                      (!clienteInput.trim() && anexos.length === 0)
+                    }
                     onClick={responder}
                   >
                     {gerarMutation.isPending ? (
