@@ -121,15 +121,23 @@ ${data.canal === "email" ? "Inclua uma linha de assunto na primeira linha." : "M
 ${data.historico.length > 0 ? "A seguir está a conversa já trocada com este cliente. Gere apenas a próxima mensagem a enviar." : ""}`;
 
     // Constrói o histórico da conversa: vendedor -> model, cliente -> user.
-    const contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }> = [
-      { role: "user", parts: [{ text: userPrompt }] },
+    const contents: Array<{ role: "user" | "model"; texto: string; imagens: string[] }> = [
+      { role: "user", texto: userPrompt, imagens: [] },
     ];
     for (const m of data.historico) {
       contents.push({
         role: m.autor === "vendedor" ? "model" : "user",
-        parts: [{ text: m.texto }],
+        texto: m.texto,
+        imagens: m.imagens ?? [],
       });
     }
+
+    // Divide uma data URL em mimetype + base64 puro (para o Gemini direto).
+    const parseDataUrl = (url: string): { mime: string; b64: string } | null => {
+      const match = /^data:([^;]+);base64,(.+)$/.exec(url);
+      if (!match) return null;
+      return { mime: match[1], b64: match[2] };
+    };
 
     const systemText = SYSTEM_PROMPT(vendedor, empresa, etapa);
     const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -139,10 +147,21 @@ ${data.historico.length > 0 ? "A seguir está a conversa já trocada com este cl
     if (lovableKey) {
       const messages = [
         { role: "system" as const, content: systemText },
-        ...contents.map((c) => ({
-          role: c.role === "model" ? ("assistant" as const) : ("user" as const),
-          content: c.parts.map((p) => p.text).join(""),
-        })),
+        ...contents.map((c) => {
+          const role = c.role === "model" ? ("assistant" as const) : ("user" as const);
+          if (c.imagens.length === 0) {
+            return { role, content: c.texto };
+          }
+          const parts: Array<
+            | { type: "text"; text: string }
+            | { type: "image_url"; image_url: { url: string } }
+          > = [];
+          if (c.texto) parts.push({ type: "text", text: c.texto });
+          for (const url of c.imagens) {
+            parts.push({ type: "image_url", image_url: { url } });
+          }
+          return { role, content: parts };
+        }),
       ];
 
       for (let attempt = 0; attempt < 3; attempt++) {
