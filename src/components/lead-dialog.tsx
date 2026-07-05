@@ -114,6 +114,7 @@ export function LeadDialog({
       ];
       setConversa(novaConversa);
       setClienteInput("");
+      setAnexos([]);
       await supabase.from("leads").update({ abordagem_ia: res.texto }).eq("id", lead!.id);
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       toast.success("Mensagem gerada!");
@@ -125,12 +126,45 @@ export function LeadDialog({
 
   const responder = () => {
     const texto = clienteInput.trim();
-    if (!texto) {
-      toast.error("Escreva o que o cliente respondeu.");
+    if (!texto && anexos.length === 0) {
+      toast.error("Escreva o que o cliente respondeu ou anexe uma imagem.");
       return;
     }
-    gerarMutation.mutate([...conversa, { autor: "cliente", texto }]);
+    gerarMutation.mutate([...conversa, { autor: "cliente", texto, imagens: anexos }]);
   };
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const restantes = 4 - anexos.length;
+    if (restantes <= 0) {
+      toast.error("Máximo de 4 imagens por mensagem.");
+      return;
+    }
+    const selecionados = Array.from(files).slice(0, restantes);
+    const novos: string[] = [];
+    for (const file of selecionados) {
+      if (!file.type.startsWith("image/")) {
+        toast.error(`"${file.name}" não é uma imagem.`);
+        continue;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`"${file.name}" é maior que 5 MB.`);
+        continue;
+      }
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      novos.push(dataUrl);
+    }
+    if (novos.length) setAnexos((prev) => [...prev, ...novos]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removerAnexo = (idx: number) =>
+    setAnexos((prev) => prev.filter((_, i) => i !== idx));
 
   const copyTexto = (texto: string) => {
     navigator.clipboard.writeText(texto);
