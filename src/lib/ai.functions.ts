@@ -6,6 +6,7 @@ type EtapaFunil = "novo" | "contato" | "proposta" | "fechado";
 interface MensagemTurno {
   autor: "vendedor" | "cliente";
   texto: string;
+  imagens?: string[]; // data URLs (data:image/...;base64,...) anexadas pelo cliente/vendedor
 }
 
 interface AbordagemInput {
