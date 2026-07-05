@@ -37,6 +37,7 @@ ${ETAPA_OBJETIVO[etapa]}
 
 MODO CONVERSA: Esta pode ser uma negociação em andamento. As mensagens marcadas como "model" são mensagens que VOCÊ (o vendedor) já enviou; as mensagens "user" depois da primeira são RESPOSTAS REAIS DO CLIENTE. Quando o cliente responder, gere APENAS a próxima mensagem que o vendedor deve enviar, reagindo diretamente ao que o cliente disse (dúvidas, objeções, preço, interesse, recusa). Não repita mensagens anteriores e não invente o que o cliente disse.
 Responda SEMPRE apenas com o texto pronto para o vendedor copiar e enviar — sem explicações, sem aspas, sem rótulos como "Mensagem:".
+IMAGENS: podem ser anexadas capturas de ecrã ou ficheiros (ex.: a ficha do Google do cliente, a conversa do WhatsApp, um site). Analise essas imagens e use o que observa nelas (o que o cliente escreveu, pontos fracos da ficha, oportunidades) para gerar a melhor mensagem possível.
 
 Princípios de persuasão a usar com naturalidade: prova social (avaliações/rating), benefício concreto, escassez/urgência suave e chamada à ação clara — sem soar a robô nem agressivo.
 Use o nome da empresa do cliente e cite oportunidades reais com base nos dados (avaliações, rating, presença online).
