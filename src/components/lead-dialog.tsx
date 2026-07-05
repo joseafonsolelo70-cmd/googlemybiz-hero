@@ -65,6 +65,8 @@ export function LeadDialog({
   const gerar = useServerFn(gerarAbordagem);
   const [conversa, setConversa] = useState<MensagemTurno[]>([]);
   const [clienteInput, setClienteInput] = useState("");
+  const [anexos, setAnexos] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [canal, setCanal] = useState<"whatsapp" | "email">("whatsapp");
   const [followup, setFollowup] = useState("");
   const [nota, setNota] = useState("");
