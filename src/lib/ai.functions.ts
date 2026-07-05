@@ -234,7 +234,7 @@ ${data.historico.length > 0 ? "A seguir está a conversa já trocada com este cl
             system_instruction: {
               parts: [{ text: systemText }],
             },
-            contents,
+            contents: geminiContents,
             generationConfig: {
               temperature: 0.8,
             },
