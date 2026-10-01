@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search, Loader2, Plus, Check, Star, Phone, Globe, MapPin, ExternalLink, AlertTriangle, CheckCircle2, XCircle, Tag } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,6 +28,39 @@ function ProspeccaoPage() {
   const [cidade, setCidade] = useState("");
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [added, setAdded] = useState<Set<string>>(new Set());
+  const [hydrated, setHydrated] = useState(false);
+
+  // Restaurar a última pesquisa ao voltar à página
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("prospeccao_state");
+      if (raw) {
+        const st = JSON.parse(raw);
+        setNicho(st.nicho ?? "");
+        setCidade(st.cidade ?? "");
+        setResults(Array.isArray(st.results) ? st.results : []);
+      }
+    } catch {}
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      sessionStorage.setItem("prospeccao_state", JSON.stringify({ nicho, cidade, results }));
+    } catch {}
+  }, [nicho, cidade, results, hydrated]);
+
+  // Leads já existentes no CRM (para marcar como "Adicionado")
+  const { data: existingIds } = useQuery({
+    queryKey: ["leads", "place_ids", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("leads").select("place_id");
+      if (error) throw error;
+      return new Set((data ?? []).map((l) => l.place_id).filter(Boolean) as string[]);
+    },
+  });
 
   const searchMutation = useMutation({
     mutationFn: () => search({ data: { nicho, cidade } }),
@@ -40,8 +73,10 @@ function ProspeccaoPage() {
 
   const addMutation = useMutation({
     mutationFn: async (place: PlaceResult) => {
+      if (!user) throw new Error("Sessão expirada. Entre novamente.");
+      if (existingIds?.has(place.place_id)) return place.place_id;
       const { error } = await supabase.from("leads").insert({
-        user_id: user!.id,
+        user_id: user.id,
         nome_empresa: place.nome_empresa,
         telefone: place.telefone,
         endereco: place.endereco,
@@ -62,7 +97,7 @@ function ProspeccaoPage() {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       toast.success("Lead adicionado ao CRM.");
     },
-    onError: () => toast.error("Não foi possível adicionar o lead."),
+    onError: (e: Error) => toast.error(`Não foi possível adicionar o lead: ${e.message}`),
   });
 
   const handleSearch = (e: React.FormEvent) => {
@@ -112,7 +147,7 @@ function ProspeccaoPage() {
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">{results.length} resultados</p>
           {results.map((place) => {
-            const isAdded = added.has(place.place_id);
+            const isAdded = added.has(place.place_id) || !!existingIds?.has(place.place_id);
             const melhorias = pontosParaMelhorar({
               rating: place.rating,
               totalAvaliacoes: place.total_avaliacoes,
@@ -223,7 +258,7 @@ function ProspeccaoPage() {
                   <Button
                     variant={isAdded ? "secondary" : "action"}
                     size="sm"
-                    disabled={isAdded || addMutation.isPending}
+                    disabled={isAdded || (addMutation.isPending && addMutation.variables?.place_id === place.place_id)}
                     onClick={() => addMutation.mutate(place)}
                     className="shrink-0"
                   >
