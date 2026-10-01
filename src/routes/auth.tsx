@@ -77,7 +77,8 @@ function AuthPage() {
     });
     if (result.error) {
       setBusy(false);
-      toast.error("Falha ao entrar com Google.");
+      const msg = result.error instanceof Error ? result.error.message : String(result.error);
+      toast.error(`Falha ao entrar com Google${msg ? `: ${msg}` : "."}`);
       return;
     }
     if (result.redirected) return;
