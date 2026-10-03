@@ -29,6 +29,7 @@ function ProspeccaoPage() {
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [added, setAdded] = useState<Set<string>>(new Set());
   const [hydrated, setHydrated] = useState(false);
+  const [visible, setVisible] = useState(20);
 
   // Restaurar a última pesquisa ao voltar à página
   useEffect(() => {
@@ -66,6 +67,7 @@ function ProspeccaoPage() {
     mutationFn: () => search({ data: { nicho, cidade } }),
     onSuccess: (data) => {
       setResults(data);
+      setVisible(20);
       if (data.length === 0) toast.info("Nenhum resultado encontrado.");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -146,7 +148,7 @@ function ProspeccaoPage() {
       {results.length > 0 && (
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">{results.length} resultados</p>
-          {results.map((place) => {
+          {results.slice(0, visible).map((place) => {
             const isAdded = added.has(place.place_id) || !!existingIds?.has(place.place_id);
             const melhorias = pontosParaMelhorar({
               rating: place.rating,
@@ -276,6 +278,15 @@ function ProspeccaoPage() {
               </Card>
             );
           })}
+          {visible < results.length && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setVisible((v) => v + 20)}
+            >
+              Mostrar mais ({results.length - visible} restantes)
+            </Button>
+          )}
         </div>
       )}
     </div>
