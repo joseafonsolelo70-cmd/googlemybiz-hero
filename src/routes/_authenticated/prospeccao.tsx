@@ -163,7 +163,7 @@ function ProspeccaoPage() {
               temCategoriasSecundarias: place.tem_categorias_secundarias,
             });
             return (
-              <Card key={place.place_id}>
+              <Card key={place.place_id} className="shadow-none">
                 <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
