@@ -163,7 +163,7 @@ function ProspeccaoPage() {
               temCategoriasSecundarias: place.tem_categorias_secundarias,
             });
             return (
-              <Card key={place.place_id}>
+              <Card key={place.place_id} className="shadow-none">
                 <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -257,23 +257,28 @@ function ProspeccaoPage() {
                       ))}
                     </div>
                   </div>
-                  <Button
-                    variant={isAdded ? "secondary" : "action"}
-                    size="sm"
-                    disabled={isAdded || (addMutation.isPending && addMutation.variables?.place_id === place.place_id)}
-                    onClick={() => addMutation.mutate(place)}
-                    className="shrink-0"
-                  >
-                    {isAdded ? (
-                      <>
-                        <Check className="h-4 w-4" /> Adicionado
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="h-4 w-4" /> Adicionar ao CRM
-                      </>
-                    )}
-                  </Button>
+                  {isAdded ? (
+                    <div className="inline-flex h-8 shrink-0 items-center justify-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 text-sm font-medium text-success">
+                      <Check className="h-4 w-4" /> Adicionado
+                    </div>
+                  ) : (
+                    <Button
+                      variant="action"
+                      size="sm"
+                      onClick={() => {
+                        if (addMutation.isPending) return;
+                        addMutation.mutate(place);
+                      }}
+                      className="shrink-0 shadow-none"
+                    >
+                      {addMutation.isPending && addMutation.variables?.place_id === place.place_id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                      Adicionar ao CRM
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             );
