@@ -97,9 +97,9 @@ function ProspeccaoPage() {
     onSuccess: (placeId) => {
       setAdded((prev) => new Set(prev).add(placeId));
       queryClient.invalidateQueries({ queryKey: ["leads"] });
-      toast.success("Lead adicionado ao CRM.");
+      toast.success("Lead adicionado ao CRM.", { id: "lead-add" });
     },
-    onError: (e: Error) => toast.error(`Não foi possível adicionar o lead: ${e.message}`),
+    onError: (e: Error) => toast.error(`Não foi possível adicionar o lead: ${e.message}`, { id: "lead-add" }),
   });
 
   const handleSearch = (e: React.FormEvent) => {
