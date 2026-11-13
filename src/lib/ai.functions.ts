@@ -45,6 +45,7 @@ PRINCÍPIOS INEGOCIÁVEIS
 
 ANÁLISE ANTES DE ESCREVER
 Avalia nome, nicho/categoria, rating e número de avaliações quando disponíveis, website, telefone, localização, score interno e imagens anexadas. Fotografias, descrição, serviços, horários, categorias detalhadas e completude só podem ser avaliados se estiverem nos dados ou imagens; caso contrário, considera-os desconhecidos. Identifica até três oportunidades realmente sustentadas e escolhe apenas a mais forte para a primeira mensagem. Apresenta consequências como possibilidade, nunca como facto comprovado.
+PERSONALIZAÇÃO POR SEGMENTO: em restaurantes, considera descoberta, fotografias dos pratos, avaliações, localização e contacto; em barbearias, cortes, fotografias, avaliações, serviços e localização; em salões de beleza, serviços, trabalhos, avaliações e confiança; em oficinas, serviços, localização, confiança e contacto; em clínicas, apresentação profissional, informações, serviços e confiança; em lojas, produtos, informações comerciais, localização e contacto. Estes são ângulos para orientar a análise, não factos: só usa o que os dados ou imagens confirmarem.
 
 ESTRATÉGIA COMERCIAL POR FASE
 Usa a etapa do funil como orientação, mas deixa a resposta real e o histórico determinarem a próxima ação:
@@ -138,7 +139,7 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
       historico,
     };
   })
-  .handler(async ({ data, context }): Promise<{ texto: string }> => {
+  .handler(async ({ data, context }): Promise<AbordagemResultado> => {
     const { supabase } = context;
 
     const { data: lead, error } = await supabase
@@ -165,19 +166,21 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
 
     const canalLabel = data.canal === "email" ? "e-mail" : "WhatsApp";
     const localizacao = lead.endereco?.trim() || lead.cidade?.trim() || "";
-    const userPrompt = `Gere uma mensagem para ${canalLabel}.
-Dados da empresa:
-- Nome: ${lead.nome_empresa}
-- Nicho: ${lead.nicho ?? "n/d"}
-- Localização (use exatamente esta, não invente outra): ${localizacao || "n/d — NÃO mencione nenhuma localização"}
-- Rating no Google: ${lead.rating ?? "sem rating"}
-- Total de avaliações: ${lead.total_avaliacoes ?? 0}
-- Tem website: ${lead.website ? "sim" : "não"}
-- Score SEO local (0-100): ${lead.score_seo ?? 0}
+    const primeira = data.historico.length === 0;
+    const userPrompt = `Prepara a resposta adequada para ${canalLabel}.
+DADOS DISPONÍVEIS (campos ausentes são desconhecidos, não prova de ausência):
+- Nome da empresa: ${lead.nome_empresa}
+- Nicho/categoria: ${lead.nicho ?? "não fornecido"}
+- Localização (usar exatamente apenas se preenchida): ${localizacao || "não fornecida — omitir"}
+- Classificação/rating recebido: ${lead.rating ?? "não fornecido"}
+- Número de avaliações recebido: ${lead.total_avaliacoes ?? "não fornecido"}
+- Website encontrado na pesquisa: ${lead.website ?? "não fornecido; não afirmar que a empresa não tem website"}
+- Telefone encontrado na pesquisa: ${lead.telefone ?? "não fornecido; não afirmar que a empresa não tem telefone"}
+- Score SEO interno (0-100; não oficial do Google): ${lead.score_seo ?? "não fornecido"}
+- Fotografias, descrição, serviços, horários, categorias detalhadas e outros atributos: não estão disponíveis nos dados deste lead; só avaliar se uma imagem anexada os mostrar.
 
-${data.canal === "email" ? "Inclua uma linha de assunto na primeira linha." : "Mensagem direta de WhatsApp, com emojis moderados."}
-
-${data.historico.length > 0 ? "A seguir está a conversa já trocada com este cliente. Gere apenas a próxima mensagem a enviar." : ""}`;
+Canal: ${data.canal === "email" ? "e-mail (inclui assunto)" : "WhatsApp"}.
+${primeira ? "É o primeiro contacto: procura uma resposta, não vendas." : "Usa a conversa abaixo e responde diretamente à última mensagem real do cliente."}`;
 
     // Constrói o histórico da conversa: vendedor -> model, cliente -> user.
     const contents: Array<{ role: "user" | "model"; texto: string; imagens: string[] }> = [
@@ -198,7 +201,7 @@ ${data.historico.length > 0 ? "A seguir está a conversa já trocada com este cl
       return { mime: match[1], b64: match[2] };
     };
 
-    const systemText = SYSTEM_PROMPT(vendedor, empresa, etapa);
+    const systemText = SYSTEM_PROMPT(vendedor, empresa, etapa, primeira);
     const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
     // 1) Preferir o Lovable AI Gateway (sem limites do plano gratuito do Gemini).
@@ -242,7 +245,7 @@ ${data.historico.length > 0 ? "A seguir está a conversa já trocada com este cl
             choices?: Array<{ message?: { content?: string } }>;
           };
           const texto = j.choices?.[0]?.message?.content?.trim() ?? "";
-          if (texto) return { texto };
+          if (texto) return interpretarResposta(texto);
           break; // resposta vazia — tentar o fallback direto
         }
 
@@ -307,7 +310,7 @@ ${data.historico.length > 0 ? "A seguir está a conversa já trocada com este cl
         };
         const texto =
           j.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim() ?? "";
-        return { texto };
+        return interpretarResposta(texto);
       }
 
       if (r.status === 429 && attempt < 2) {

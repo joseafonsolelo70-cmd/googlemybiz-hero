@@ -40,6 +40,12 @@ import { ScoreBadge } from "@/components/score-badge";
 import { whatsappLink } from "@/lib/utils";
 
 type MensagemTurno = { autor: "vendedor" | "cliente"; texto: string; imagens?: string[] };
+type AnaliseAbordagem = {
+  diagnostico: string;
+  dorPrincipal: string;
+  estrategia: string;
+  perguntaFinal: string;
+};
 
 type Lead = Tables<"leads">;
 type EtapaFunil = "novo" | "contato" | "proposta" | "fechado";
@@ -64,6 +70,7 @@ export function LeadDialog({
   const queryClient = useQueryClient();
   const gerar = useServerFn(gerarAbordagem);
   const [conversa, setConversa] = useState<MensagemTurno[]>([]);
+  const [analise, setAnalise] = useState<AnaliseAbordagem | null>(null);
   const [clienteInput, setClienteInput] = useState("");
   const [anexos, setAnexos] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -80,6 +87,7 @@ export function LeadDialog({
       setConversa(
         lead.abordagem_ia ? [{ autor: "vendedor", texto: lead.abordagem_ia }] : [],
       );
+      setAnalise(null);
       setClienteInput("");
       setAnexos([]);
       setEtapa((lead.status_funil as EtapaFunil | null) ?? "novo");
@@ -112,6 +120,7 @@ export function LeadDialog({
         ...historico,
         { autor: "vendedor", texto: res.texto },
       ];
+      setAnalise(historico.length === 0 ? res.analise : null);
       setConversa(novaConversa);
       setClienteInput("");
       setAnexos([]);
@@ -307,6 +316,29 @@ export function LeadDialog({
             {/* Conversa */}
             {temConversa ? (
               <div className="space-y-2 rounded-md border bg-muted/20 p-2">
+                {analise && (
+                  <div className="space-y-2 border-l-2 border-action px-3 py-2 text-sm">
+                    <p className="font-semibold text-foreground">Análise comercial</p>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Diagnóstico</p>
+                      <p className="whitespace-pre-wrap text-foreground">{analise.diagnostico}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Dor principal</p>
+                      <p className="whitespace-pre-wrap text-foreground">{analise.dorPrincipal}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Estratégia</p>
+                      <p className="whitespace-pre-wrap text-foreground">{analise.estrategia}</p>
+                    </div>
+                    {analise.perguntaFinal && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">Pergunta final</p>
+                        <p className="whitespace-pre-wrap text-foreground">{analise.perguntaFinal}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {conversa.map((m, i) => (
                   <div
                     key={i}
