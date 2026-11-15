@@ -45,6 +45,7 @@ type AnaliseAbordagem = {
   dorPrincipal: string;
   estrategia: string;
   perguntaFinal: string;
+  segundaOportunidade: string;
 };
 
 type Lead = Tables<"leads">;
@@ -84,9 +85,7 @@ export function LeadDialog({
   // Reinicia a conversa ao abrir/trocar de lead, recuperando a última abordagem salva.
   useEffect(() => {
     if (lead && open) {
-      setConversa(
-        lead.abordagem_ia ? [{ autor: "vendedor", texto: lead.abordagem_ia }] : [],
-      );
+      setConversa(lead.abordagem_ia ? [{ autor: "vendedor", texto: lead.abordagem_ia }] : []);
       setAnalise(null);
       setClienteInput("");
       setAnexos([]);
@@ -116,10 +115,7 @@ export function LeadDialog({
         toast.error("A IA não retornou texto. Tente novamente.");
         return;
       }
-      const novaConversa: MensagemTurno[] = [
-        ...historico,
-        { autor: "vendedor", texto: res.texto },
-      ];
+      const novaConversa: MensagemTurno[] = [...historico, { autor: "vendedor", texto: res.texto }];
       setAnalise(historico.length === 0 ? res.analise : null);
       setConversa(novaConversa);
       setClienteInput("");
@@ -172,14 +168,12 @@ export function LeadDialog({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const removerAnexo = (idx: number) =>
-    setAnexos((prev) => prev.filter((_, i) => i !== idx));
+  const removerAnexo = (idx: number) => setAnexos((prev) => prev.filter((_, i) => i !== idx));
 
   const copyTexto = (texto: string) => {
     navigator.clipboard.writeText(texto);
     toast.success("Copiado!");
   };
-
 
   const followupMutation = useMutation({
     mutationFn: async () => {
@@ -217,7 +211,6 @@ export function LeadDialog({
   if (!lead) return null;
 
   const temConversa = conversa.length > 0;
-
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -331,10 +324,22 @@ export function LeadDialog({
                       <p className="text-xs font-medium text-muted-foreground">Estratégia</p>
                       <p className="whitespace-pre-wrap text-foreground">{analise.estrategia}</p>
                     </div>
+                    {analise.segundaOportunidade && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Segunda oportunidade
+                        </p>
+                        <p className="whitespace-pre-wrap text-foreground">
+                          {analise.segundaOportunidade}
+                        </p>
+                      </div>
+                    )}
                     {analise.perguntaFinal && (
                       <div>
                         <p className="text-xs font-medium text-muted-foreground">Pergunta final</p>
-                        <p className="whitespace-pre-wrap text-foreground">{analise.perguntaFinal}</p>
+                        <p className="whitespace-pre-wrap text-foreground">
+                          {analise.perguntaFinal}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -474,8 +479,7 @@ export function LeadDialog({
                     size="sm"
                     className="flex-1"
                     disabled={
-                      gerarMutation.isPending ||
-                      (!clienteInput.trim() && anexos.length === 0)
+                      gerarMutation.isPending || (!clienteInput.trim() && anexos.length === 0)
                     }
                     onClick={responder}
                   >
@@ -499,7 +503,6 @@ export function LeadDialog({
               </div>
             )}
           </TabsContent>
-
 
           <TabsContent value="followup" className="space-y-3 pt-3">
             <Label htmlFor="followup">Próximo lembrete</Label>

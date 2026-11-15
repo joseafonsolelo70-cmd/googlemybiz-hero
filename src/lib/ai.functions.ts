@@ -21,6 +21,7 @@ interface AnaliseAbordagem {
   dorPrincipal: string;
   estrategia: string;
   perguntaFinal: string;
+  segundaOportunidade: string;
 }
 
 interface AbordagemResultado {
@@ -30,7 +31,12 @@ interface AbordagemResultado {
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
-const SYSTEM_PROMPT = (vendedor: string, empresa: string, etapa: EtapaFunil, primeira: boolean) => `IDENTIDADE E FUNÇÃO
+const SYSTEM_PROMPT = (
+  vendedor: string,
+  empresa: string,
+  etapa: EtapaFunil,
+  primeira: boolean,
+) => `IDENTIDADE E FUNÇÃO
 És especialista sénior em vendas consultivas B2B, prospecção, copywriting persuasivo e Perfil da Empresa no Google. Trabalhas como estrategista comercial da ${empresa}, representada por ${vendedor}. Pensa como vendedor profissional antes de escrever como copywriter. O objetivo é iniciar conversas úteis e, com respeito, transformar interesse em oportunidades reais.
 
 PRINCÍPIOS INEGOCIÁVEIS
@@ -54,10 +60,11 @@ E. CONFORMIDADE E SAÚDE: estado de verificação, possíveis duplicações, inc
 Não suponhas acesso a métricas, estado interno da ficha ou concorrentes. Categorias, serviços, descrição, produtos, área de atendimento, respostas às avaliações, vídeos, horários, atributos, publicações, links, autoridade, verificação, duplicações, conformidade, atualizações e precisão/distância no Maps só podem ser avaliados se estiverem nos dados ou forem claramente visíveis nas imagens.
 
 IDENTIFICAÇÃO E PRIORIZAÇÃO
-Identifica no máximo três problemas/oportunidades mais importantes e não escolhas avaliações automaticamente. Para cada um, apresenta: o que foi encontrado e a evidência/estado do dado; por que merece atenção; como pode afetar relevância, visibilidade ou conversão (como possibilidade quando não for comprovado); e como ${empresa} pode ajudar, sem afirmar que já executou o trabalho.
+Antes de escrever a primeira abordagem, analisa individualmente todos os campos disponíveis: categoria principal e secundárias, serviços, descrição, palavras-chave/relevância local, fotografias, vídeos, website, ligação para WhatsApp, telefone, horários, endereço, área de atendimento, atributos, produtos, publicações, avaliações, respostas às avaliações, informações incompletas e estado de verificação/conformidade. Usa apenas os campos efetivamente fornecidos ou visíveis; ausência significa desconhecido, não falha.
+Compara até cinco oportunidades comprovadas. Para cada uma considera importância do problema, impacto potencial na descoberta, confiança e conversão, e possibilidade de resolução pelos serviços de ${empresa}. Escolhe a oportunidade mais relevante; regista também a segunda melhor. Avaliações são apenas uma dimensão e só podem ser o argumento principal quando forem comprovadamente mais relevantes que todas as alternativas disponíveis. Se não houver dados suficientes, declara que não é possível identificar um problema.
 Classifica como CRÍTICA (verificação, elegibilidade ou conformidade explicitamente comprometidas), ALTA (informação, categoria ou correspondência com pesquisas comprovadamente relevante), MÉDIA (notoriedade/competitividade com evidência), ou BAIXA (apresentação/conversão). Sem evidência suficiente, não atribuas prioridade. Estas classes orientam a prioridade comercial, não o algoritmo do Google.
 Compara concorrentes somente quando houver dados comparáveis fornecidos; compara categorias, serviços, avaliações, fotos, websites e informações comerciais disponíveis. Nunca inventes concorrentes, diferenças ou posições no Google.
-Na primeira mensagem, escolhe apenas a oportunidade mais relevante para despertar atenção, relaciona-a com uma consequência comercial plausível e varia o argumento conforme a evidência e o negócio; não listes todos os problemas nem repitas uma fórmula.
+Na primeira mensagem, escolhe apenas a oportunidade mais relevante para despertar atenção, relaciona-a com uma consequência comercial plausível e varia o argumento conforme a evidência e o negócio; não listes todos os problemas nem repitas uma fórmula. Antes de apresentar, confirma que avaliações não foram escolhidas por defeito e substitui esse argumento se outra oportunidade comprovada for mais importante.
 PERSONALIZAÇÃO POR SEGMENTO: em restaurantes, considera descoberta, fotografias dos pratos, avaliações, localização e contacto; em barbearias, cortes, fotografias, avaliações, serviços e localização; em salões de beleza, serviços, trabalhos, avaliações e confiança; em oficinas, serviços, localização, confiança e contacto; em clínicas, apresentação profissional, informações, serviços e confiança; em lojas, produtos, informações comerciais, localização e contacto. Estes são ângulos para orientar a análise, não factos: só usa o que os dados ou imagens confirmarem.
 
 ESTRATÉGIA COMERCIAL POR FASE
@@ -71,9 +78,10 @@ Na conversa, acompanha as seis fases naturalmente: abordagem, descoberta, diagn�
 FORMATO DA PRIMEIRA ABORDAGEM
 Quando ainda não existe conversa anterior (histórico vazio), devolve exatamente estas secções, com estes títulos, e sem texto fora delas:
 NOME DA EMPRESA: nome recebido
-DIAGNÓSTICO: separa dados confirmados, não encontrados e não verificáveis; inclui até 3 oportunidades priorizadas com evidência, motivo, impacto plausível e como ${empresa} pode ajudar. Se os dados forem insuficientes, diz isso claramente
-DOR PRINCIPAL: apenas um problema real sustentado pelos dados, ou que ainda não é possível identificar um
+DIAGNÓSTICO: separa dados confirmados, não encontrados e não verificáveis; compara até cinco oportunidades com evidência e respetivos impactos potenciais. Se os dados forem insuficientes, diz isso claramente
+DOR PRINCIPAL: oportunidade mais relevante, sustentada pelos dados, ou que ainda não é possível identificar uma
 ESTRATÉGIA: uma frase breve sobre a escolha do argumento
+SEGUNDA OPORTUNIDADE: a segunda melhor oportunidade comprovada, ou não identificada
 MENSAGEM DE ABORDAGEM: mensagem pronta para copiar e enviar
 PERGUNTA FINAL: pergunta simples que já deve constar da mensagem
 A mensagem de WhatsApp deve ter 35 a 60 palavras; ser curta, personalizada e humana; apresentar apenas um problema/oportunidade e terminar com a pergunta. Segue: saudação; identificação; observação específica; oportunidade; consequência possível sem exagero; pergunta. Sem preços, pedido imediato de reunião, explicação técnica, lista de falhas ou promessas. Para e-mail, inclui assunto.
@@ -85,12 +93,24 @@ IMAGENS: analisa capturas anexadas (ficha, conversa ou site) e usa só o que rea
 ETAPA SELECIONADA: ${etapa}. ${primeira ? "Ainda não houve contacto gerado." : "A conversa já começou; responde ao último contexto real."}`;
 
 function interpretarResposta(raw: string): AbordagemResultado {
-  const nomes = ["NOME DA EMPRESA", "DIAGNÓSTICO", "DOR PRINCIPAL", "ESTRATÉGIA", "MENSAGEM DE ABORDAGEM", "PERGUNTA FINAL"];
+  const nomes = [
+    "NOME DA EMPRESA",
+    "DIAGNÓSTICO",
+    "DOR PRINCIPAL",
+    "ESTRATÉGIA",
+    "SEGUNDA OPORTUNIDADE",
+    "MENSAGEM DE ABORDAGEM",
+    "PERGUNTA FINAL",
+  ];
   const secoes: Record<string, string[]> = {};
   let atual = "";
 
   for (const linha of raw.replace(/\*\*/g, "").split(/\r?\n/)) {
-    const titulo = linha.trim().match(/^(NOME DA EMPRESA|DIAGNÓSTICO|DOR PRINCIPAL|ESTRATÉGIA|MENSAGEM DE ABORDAGEM|PERGUNTA FINAL)\s*:\s*(.*)$/i);
+    const titulo = linha
+      .trim()
+      .match(
+        /^(NOME DA EMPRESA|DIAGNÓSTICO|DOR PRINCIPAL|ESTRATÉGIA|SEGUNDA OPORTUNIDADE|MENSAGEM DE ABORDAGEM|PERGUNTA FINAL)\s*:\s*(.*)$/i,
+      );
     if (titulo) {
       atual = nomes.find((nome) => nome.toLowerCase() === titulo[1].toLowerCase()) ?? "";
       secoes[atual] = titulo[2].trim() ? [titulo[2].trim()] : [];
@@ -112,6 +132,7 @@ function interpretarResposta(raw: string): AbordagemResultado {
       dorPrincipal: obter("DOR PRINCIPAL"),
       estrategia: obter("ESTRATÉGIA"),
       perguntaFinal: obter("PERGUNTA FINAL"),
+      segundaOportunidade: obter("SEGUNDA OPORTUNIDADE"),
     },
   };
 }
@@ -165,8 +186,7 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
 
     if (error || !lead) throw new Error("Lead não encontrado.");
 
-    const etapa: EtapaFunil =
-      data.etapa ?? ((lead.status_funil as EtapaFunil | null) ?? "novo");
+    const etapa: EtapaFunil = data.etapa ?? (lead.status_funil as EtapaFunil | null) ?? "novo";
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -191,6 +211,7 @@ DADOS DISPONÍVEIS (campos ausentes são desconhecidos, não prova de ausência)
 - Telefone encontrado na pesquisa: ${lead.telefone ?? "não fornecido; não afirmar que a empresa não tem telefone"}
 - Score SEO interno (0-100; não oficial do Google): ${lead.score_seo ?? "não fornecido"}
 - Fotografias, descrição, serviços, horários, categorias detalhadas e outros atributos: não estão disponíveis nos dados deste lead; só avaliar se uma imagem anexada os mostrar.
+- Regra de seleção: o registo contém principalmente nome, nicho, localização, rating, quantidade de avaliações, website e telefone. Não inferir ausência de fotos, vídeos, serviços, descrição, horários, atributos, categorias secundárias, produtos, publicações, respostas, área atendida, verificação ou conformidade a partir da falta desses campos. Só analisar essas dimensões se forem mostradas em imagem ou fornecidas no histórico.
 
 Canal: ${data.canal === "email" ? "e-mail (inclui assunto)" : "WhatsApp"}.
 ${primeira ? "É o primeiro contacto: procura uma resposta, não vendas." : "Usa a conversa abaixo e responde diretamente à última mensagem real do cliente."}`;
@@ -228,8 +249,7 @@ ${primeira ? "É o primeiro contacto: procura uma resposta, não vendas." : "Usa
             return { role, content: c.texto };
           }
           const parts: Array<
-            | { type: "text"; text: string }
-            | { type: "image_url"; image_url: { url: string } }
+            { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }
           > = [];
           if (c.texto) parts.push({ type: "text", text: c.texto });
           for (const url of c.imagens) {
@@ -284,9 +304,8 @@ ${primeira ? "É o primeiro contacto: procura uma resposta, não vendas." : "Usa
 
     // Mapeia o histórico para o formato de parts do Gemini (texto + inline_data).
     const geminiContents = contents.map((c) => {
-      const parts: Array<
-        { text: string } | { inline_data: { mime_type: string; data: string } }
-      > = [];
+      const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> =
+        [];
       if (c.texto) parts.push({ text: c.texto });
       for (const url of c.imagens) {
         const parsed = parseDataUrl(url);
@@ -322,7 +341,10 @@ ${primeira ? "É o primeiro contacto: procura uma resposta, não vendas." : "Usa
           candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
         };
         const texto =
-          j.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim() ?? "";
+          j.candidates?.[0]?.content?.parts
+            ?.map((p) => p.text ?? "")
+            .join("")
+            .trim() ?? "";
         return interpretarResposta(texto);
       }
 
