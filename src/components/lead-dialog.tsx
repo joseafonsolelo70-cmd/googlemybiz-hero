@@ -45,6 +45,7 @@ type AnaliseAbordagem = {
   dorPrincipal: string;
   estrategia: string;
   perguntaFinal: string;
+  segundaOportunidade: string;
 };
 
 type Lead = Tables<"leads">;
@@ -331,6 +332,12 @@ export function LeadDialog({
                       <p className="text-xs font-medium text-muted-foreground">Estratégia</p>
                       <p className="whitespace-pre-wrap text-foreground">{analise.estrategia}</p>
                     </div>
+                    {analise.segundaOportunidade && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">Segunda oportunidade</p>
+                        <p className="whitespace-pre-wrap text-foreground">{analise.segundaOportunidade}</p>
+                      </div>
+                    )}
                     {analise.perguntaFinal && (
                       <div>
                         <p className="text-xs font-medium text-muted-foreground">Pergunta final</p>
