@@ -31,7 +31,12 @@ interface AbordagemResultado {
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
-const SYSTEM_PROMPT = (vendedor: string, empresa: string, etapa: EtapaFunil, primeira: boolean) => `IDENTIDADE E FUNÇÃO
+const SYSTEM_PROMPT = (
+  vendedor: string,
+  empresa: string,
+  etapa: EtapaFunil,
+  primeira: boolean,
+) => `IDENTIDADE E FUNÇÃO
 És especialista sénior em vendas consultivas B2B, prospecção, copywriting persuasivo e Perfil da Empresa no Google. Trabalhas como estrategista comercial da ${empresa}, representada por ${vendedor}. Pensa como vendedor profissional antes de escrever como copywriter. O objetivo é iniciar conversas úteis e, com respeito, transformar interesse em oportunidades reais.
 
 PRINCÍPIOS INEGOCIÁVEIS
@@ -88,12 +93,24 @@ IMAGENS: analisa capturas anexadas (ficha, conversa ou site) e usa só o que rea
 ETAPA SELECIONADA: ${etapa}. ${primeira ? "Ainda não houve contacto gerado." : "A conversa já começou; responde ao último contexto real."}`;
 
 function interpretarResposta(raw: string): AbordagemResultado {
-  const nomes = ["NOME DA EMPRESA", "DIAGNÓSTICO", "DOR PRINCIPAL", "ESTRATÉGIA", "SEGUNDA OPORTUNIDADE", "MENSAGEM DE ABORDAGEM", "PERGUNTA FINAL"];
+  const nomes = [
+    "NOME DA EMPRESA",
+    "DIAGNÓSTICO",
+    "DOR PRINCIPAL",
+    "ESTRATÉGIA",
+    "SEGUNDA OPORTUNIDADE",
+    "MENSAGEM DE ABORDAGEM",
+    "PERGUNTA FINAL",
+  ];
   const secoes: Record<string, string[]> = {};
   let atual = "";
 
   for (const linha of raw.replace(/\*\*/g, "").split(/\r?\n/)) {
-    const titulo = linha.trim().match(/^(NOME DA EMPRESA|DIAGNÓSTICO|DOR PRINCIPAL|ESTRATÉGIA|SEGUNDA OPORTUNIDADE|MENSAGEM DE ABORDAGEM|PERGUNTA FINAL)\s*:\s*(.*)$/i);
+    const titulo = linha
+      .trim()
+      .match(
+        /^(NOME DA EMPRESA|DIAGNÓSTICO|DOR PRINCIPAL|ESTRATÉGIA|SEGUNDA OPORTUNIDADE|MENSAGEM DE ABORDAGEM|PERGUNTA FINAL)\s*:\s*(.*)$/i,
+      );
     if (titulo) {
       atual = nomes.find((nome) => nome.toLowerCase() === titulo[1].toLowerCase()) ?? "";
       secoes[atual] = titulo[2].trim() ? [titulo[2].trim()] : [];
@@ -169,8 +186,7 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
 
     if (error || !lead) throw new Error("Lead não encontrado.");
 
-    const etapa: EtapaFunil =
-      data.etapa ?? ((lead.status_funil as EtapaFunil | null) ?? "novo");
+    const etapa: EtapaFunil = data.etapa ?? (lead.status_funil as EtapaFunil | null) ?? "novo";
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -233,8 +249,7 @@ ${primeira ? "É o primeiro contacto: procura uma resposta, não vendas." : "Usa
             return { role, content: c.texto };
           }
           const parts: Array<
-            | { type: "text"; text: string }
-            | { type: "image_url"; image_url: { url: string } }
+            { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }
           > = [];
           if (c.texto) parts.push({ type: "text", text: c.texto });
           for (const url of c.imagens) {
@@ -289,9 +304,8 @@ ${primeira ? "É o primeiro contacto: procura uma resposta, não vendas." : "Usa
 
     // Mapeia o histórico para o formato de parts do Gemini (texto + inline_data).
     const geminiContents = contents.map((c) => {
-      const parts: Array<
-        { text: string } | { inline_data: { mime_type: string; data: string } }
-      > = [];
+      const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> =
+        [];
       if (c.texto) parts.push({ text: c.texto });
       for (const url of c.imagens) {
         const parsed = parseDataUrl(url);
@@ -327,7 +341,10 @@ ${primeira ? "É o primeiro contacto: procura uma resposta, não vendas." : "Usa
           candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
         };
         const texto =
-          j.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim() ?? "";
+          j.candidates?.[0]?.content?.parts
+            ?.map((p) => p.text ?? "")
+            .join("")
+            .trim() ?? "";
         return interpretarResposta(texto);
       }
 
