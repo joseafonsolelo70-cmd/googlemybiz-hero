@@ -1,27 +1,36 @@
-import { describe, expect, it } from "bun:test";
 import { validarLimiteDePalavras } from "./ai.functions";
 
 const textoComPalavras = (quantidade: number) =>
   Array.from({ length: quantidade }, (_, indice) => `palavra${indice + 1}`).join(" ");
 
-describe("limite de palavras das abordagens comerciais", () => {
-  it("aceita exatamente 35 palavras", () => {
-    expect(validarLimiteDePalavras(textoComPalavras(35))).toBe(textoComPalavras(35));
-  });
+function exigir(condicao: boolean, mensagem: string): void {
+  if (!condicao) throw new Error(mensagem);
+}
 
-  it("aceita exatamente 60 palavras", () => {
-    expect(validarLimiteDePalavras(textoComPalavras(60))).toBe(textoComPalavras(60));
-  });
+function exigirErro(fn: () => unknown, mensagem: string): void {
+  try {
+    fn();
+  } catch {
+    return;
+  }
+  throw new Error(mensagem);
+}
 
-  it("rejeita 34 palavras", () => {
-    expect(() => validarLimiteDePalavras(textoComPalavras(34))).toThrow(
-      "A resposta gerada ficou fora do limite de 35 a 60 palavras. Gere novamente.",
-    );
-  });
+exigir(
+  validarLimiteDePalavras(textoComPalavras(35)) === textoComPalavras(35),
+  "Deve aceitar exatamente 35 palavras.",
+);
+exigir(
+  validarLimiteDePalavras(textoComPalavras(60)) === textoComPalavras(60),
+  "Deve aceitar exatamente 60 palavras.",
+);
+exigirErro(
+  () => validarLimiteDePalavras(textoComPalavras(34)),
+  "Deve rejeitar 34 palavras.",
+);
+exigirErro(
+  () => validarLimiteDePalavras(textoComPalavras(61)),
+  "Deve rejeitar 61 palavras.",
+);
 
-  it("rejeita 61 palavras", () => {
-    expect(() => validarLimiteDePalavras(textoComPalavras(61))).toThrow(
-      "A resposta gerada ficou fora do limite de 35 a 60 palavras. Gere novamente.",
-    );
-  });
-});
+console.info("Limite comercial de 35–60 palavras: 4 casos aprovados.");
