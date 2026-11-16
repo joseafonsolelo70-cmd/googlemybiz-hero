@@ -91,8 +91,7 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
     const vendedor = profile?.nome_vendedor?.trim() || "José";
     const empresa = profile?.empresa_vendedor?.trim() || "JAL Digital";
 
-    const userPrompt = `Cria uma mensagem de abordagem comercial.
-Canal selecionado: ${data.canal === "email" ? "e-mail" : "WhatsApp"}
+    const userPrompt = `Canal: ${data.canal === "email" ? "e-mail" : "WhatsApp"}
 Etapa selecionada: ${data.etapa ?? lead.status_funil ?? "novo"}
 Perfil: ${vendedor}, ${empresa}
 Dados do negócio:
