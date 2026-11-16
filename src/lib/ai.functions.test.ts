@@ -24,13 +24,7 @@ exigir(
   validarLimiteDePalavras(textoComPalavras(60)) === textoComPalavras(60),
   "Deve aceitar exatamente 60 palavras.",
 );
-exigirErro(
-  () => validarLimiteDePalavras(textoComPalavras(34)),
-  "Deve rejeitar 34 palavras.",
-);
-exigirErro(
-  () => validarLimiteDePalavras(textoComPalavras(61)),
-  "Deve rejeitar 61 palavras.",
-);
+exigirErro(() => validarLimiteDePalavras(textoComPalavras(34)), "Deve rejeitar 34 palavras.");
+exigirErro(() => validarLimiteDePalavras(textoComPalavras(61)), "Deve rejeitar 61 palavras.");
 
 console.info("Limite comercial de 35–60 palavras: 4 casos aprovados.");
