@@ -1,0 +1,2 @@
+- [x] Remove previous commercial-prompt rules and enforce only the 35–60-word requirement.
+- [ ] Decide whether the uploaded LocalBoost Angola identity document should replace the single-rule setup; waiting for the user's choice.
