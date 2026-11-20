@@ -1,2 +1,2 @@
-- [x] Remove previous commercial-prompt rules and enforce only the 35–60-word requirement.
-- [ ] Decide whether the uploaded LocalBoost Angola identity document should replace the single-rule setup; waiting for the user's choice.
+- [x] Confirm the uploaded LocalBoost Angola document should be applied.
+- [ ] Apply its commercial guidance while enforcing 35–60 words per generated outreach message; preserve other app features and integrations.
