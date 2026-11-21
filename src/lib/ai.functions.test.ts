@@ -1,4 +1,4 @@
-import { validarLimiteDePalavras } from "./ai.functions";
+import { interpretarResposta, validarLimiteDePalavras } from "./ai.functions";
 
 const textoComPalavras = (quantidade: number) =>
   Array.from({ length: quantidade }, (_, indice) => `palavra${indice + 1}`).join(" ");
@@ -27,4 +27,25 @@ exigir(
 exigirErro(() => validarLimiteDePalavras(textoComPalavras(34)), "Deve rejeitar 34 palavras.");
 exigirErro(() => validarLimiteDePalavras(textoComPalavras(61)), "Deve rejeitar 61 palavras.");
 
-console.info("Limite comercial de 35–60 palavras: 4 casos aprovados.");
+const mensagemDe35Palavras = textoComPalavras(35);
+const primeiraAbordagem = interpretarResposta(
+  `NOME DO NEGÓCIO: Clínica Exemplo
+OPORTUNIDADE IDENTIFICADA: Avaliar uma apresentação digital mais completa.
+EVIDÊNCIA: O registo inclui o nome e a atividade, sem captura do website.
+OPORTUNIDADE COMERCIAL: Um site pode apresentar serviços e facilitar contactos.
+ABORDAGEM PARA WHATSAPP: ${mensagemDe35Palavras}
+PERGUNTA FINAL: Posso mostrar um exemplo de site?`,
+  true,
+  "whatsapp",
+);
+exigir(
+  primeiraAbordagem.texto === mensagemDe35Palavras,
+  "A análise não deve ser incluída no texto de abordagem que o utilizador copia.",
+);
+exigir(
+  primeiraAbordagem.analise?.evidencia ===
+    "O registo inclui o nome e a atividade, sem captura do website.",
+  "A evidência da análise deve ser mantida separada da mensagem.",
+);
+
+console.info("Limite comercial de 35–60 palavras e separação da análise: casos aprovados.");

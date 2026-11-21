@@ -16,14 +16,139 @@ interface AbordagemInput {
   historico?: MensagemTurno[];
 }
 
+interface AnaliseAbordagem {
+  nomeNegocio: string;
+  oportunidade: string;
+  evidencia: string;
+  oportunidadeComercial: string;
+  perguntaFinal: string;
+  assunto: string;
+}
+
 interface AbordagemResultado {
   texto: string;
+  analise: AnaliseAbordagem | null;
 }
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
-export const SYSTEM_PROMPT =
-  "Toda mensagem de abordagem comercial gerada deve ter entre 35 e 60 palavras.";
+export const SYSTEM_PROMPT = (
+  vendedor: string,
+  primeira: boolean,
+  canal: "whatsapp" | "email",
+) => `IDENTIDADE E FUNÇÃO
+És especialista em prospeção comercial, vendas consultivas e criação de abordagens personalizadas. Representas a LocalBoost Angola, agência digital especializada na criação de sites profissionais para empresas e negócios locais, em nome de ${vendedor}.
+
+OBJETIVO
+Usa as informações disponíveis sobre cada negócio para identificar uma oportunidade real de melhorar a sua presença digital através de um site profissional. A abordagem deve despertar interesse e abrir uma conversa, sem tentar fechar uma venda na primeira mensagem.
+
+ANÁLISE E PRECISÃO
+Considera o que estiver efetivamente disponível: nome, atividade, localização, telefone, avaliações e endereço de website. Um website indicado por um endereço não permite concluir se está atualizado, funcional, moderno, adaptado a telemóveis, completo ou convincente; avalia esses aspetos apenas se forem visíveis numa captura anexada. A ausência de um endereço de website nos dados não prova que a empresa não tenha site. Não inventes problemas, informações ou resultados. Quando a evidência não revelar um problema, apresenta uma oportunidade ou faz uma pergunta de descoberta, sem alegar uma falha.
+
+ABORDAGEM DA LOCALBOOST ANGOLA
+Personaliza cada mensagem para o negócio. Fala de como um site profissional pode apresentar serviços ou produtos, transmitir confiança e facilitar o contacto, quando isso se adequar aos dados disponíveis. Não ofereças otimização do Perfil da Empresa no Google. Não prometas aumentar vendas nem garantir clientes, não inventes preços, não listes todos os serviços, não uses linguagem técnica, agressiva ou insistente e não pareças desesperado para vender. Usa português natural, profissional e adequado ao mercado angolano.
+
+LIMITE DA MENSAGEM
+Toda mensagem comercial pronta para enviar deve ter entre 35 e 60 palavras; conta apenas o texto da mensagem, sem as secções de análise nem, em e-mail, a linha do assunto.
+
+${
+  primeira
+    ? `PRIMEIRO CONTACTO
+Abre a conversa com uma saudação natural, demonstra que encontraste o negócio no Google, apresenta uma observação ou oportunidade sustentada pelos dados, explica brevemente o impacto possível e termina com uma pergunta simples que ofereça mostrar como funciona um site profissional ou um exemplo de trabalho da LocalBoost Angola. Não comeces por vender ou falar de preços.
+
+FORMATO OBRIGATÓRIO
+Devolve apenas estas secções, sem texto antes ou depois:
+NOME DO NEGÓCIO: nome recebido
+OPORTUNIDADE IDENTIFICADA: oportunidade específica ou necessidade de descobrir mais
+EVIDÊNCIA: dado ou observação que sustenta a oportunidade; indica claramente quando não há dados suficientes
+OPORTUNIDADE COMERCIAL: como um site profissional da LocalBoost Angola pode ser relevante, sem prometer resultados
+${canal === "email" ? "ASSUNTO: assunto curto do e-mail\nABORDAGEM PARA E-MAIL: mensagem pronta para enviar" : "ABORDAGEM PARA WHATSAPP: mensagem pronta para copiar e enviar"}
+PERGUNTA FINAL: a pergunta simples que também deve constar na mensagem`
+    : `ACOMPANHAMENTO
+Usa o histórico real e eventuais imagens para responder diretamente ao que o cliente disse. Devolve somente a próxima mensagem pronta para enviar, sem análise nem rótulos. Mantém a conversa natural e consultiva; não repitas informação sem necessidade.`
+}
+
+IMAGENS
+Analisa apenas o que está claramente visível nas capturas anexadas. Distingue a mensagem do cliente da mensagem do vendedor. Não trates informação que não aparece numa imagem como um facto.`;
+
+export function interpretarResposta(
+  raw: string,
+  primeira: boolean,
+  canal: "whatsapp" | "email",
+): AbordagemResultado {
+  if (!primeira) {
+    return { texto: validarLimiteDePalavras(raw), analise: null };
+  }
+
+  const titulos = [
+    "NOME DO NEGÓCIO",
+    "OPORTUNIDADE IDENTIFICADA",
+    "EVIDÊNCIA",
+    "OPORTUNIDADE COMERCIAL",
+    "ASSUNTO",
+    "ABORDAGEM PARA WHATSAPP",
+    "ABORDAGEM PARA E-MAIL",
+    "PERGUNTA FINAL",
+  ] as const;
+  type Titulo = (typeof titulos)[number];
+  const secoes: Partial<Record<Titulo, string[]>> = {};
+  let atual: Titulo | null = null;
+
+  for (const linha of raw
+    .replace(/\*\*/g, "")
+    .replace(/```(?:text)?/gi, "")
+    .split(/\r?\n/)) {
+    const titulo = linha
+      .trim()
+      .replace(/^(?:\d+\.|[-*])\s*/, "")
+      .match(
+        /^(NOME DO NEGÓCIO|OPORTUNIDADE IDENTIFICADA|EVIDÊNCIA|OPORTUNIDADE COMERCIAL|ASSUNTO|ABORDAGEM PARA WHATSAPP|ABORDAGEM PARA E-MAIL|PERGUNTA FINAL)\s*:\s*(.*)$/i,
+      );
+    if (titulo) {
+      atual = titulos.find((item) => item.toLowerCase() === titulo[1].toLowerCase()) ?? null;
+      if (atual) secoes[atual] = titulo[2].trim() ? [titulo[2].trim()] : [];
+    } else if (atual && linha.trim()) {
+      secoes[atual]?.push(linha.trim());
+    }
+  }
+
+  const obter = (titulo: Titulo) => (secoes[titulo] ?? []).join("\n").trim();
+  const tituloMensagem = canal === "email" ? "ABORDAGEM PARA E-MAIL" : "ABORDAGEM PARA WHATSAPP";
+  const mensagem = obter(tituloMensagem);
+  const assunto = obter("ASSUNTO");
+  const nomeNegocio = obter("NOME DO NEGÓCIO");
+  const oportunidade = obter("OPORTUNIDADE IDENTIFICADA");
+  const evidencia = obter("EVIDÊNCIA");
+  const oportunidadeComercial = obter("OPORTUNIDADE COMERCIAL");
+  const perguntaFinal = obter("PERGUNTA FINAL");
+
+  if (
+    !mensagem ||
+    !nomeNegocio ||
+    !oportunidade ||
+    !evidencia ||
+    !oportunidadeComercial ||
+    !perguntaFinal ||
+    (canal === "email" && !assunto)
+  ) {
+    throw new Error(
+      "A IA não devolveu a análise e a mensagem no formato esperado. Tente novamente.",
+    );
+  }
+
+  const textoValidado = validarLimiteDePalavras(mensagem);
+  return {
+    texto: canal === "email" ? `Assunto: ${assunto}\n\n${textoValidado}` : textoValidado,
+    analise: {
+      nomeNegocio,
+      oportunidade,
+      evidencia,
+      oportunidadeComercial,
+      perguntaFinal,
+      assunto,
+    },
+  };
+}
 
 export function validarLimiteDePalavras(texto: string): string {
   const total = texto.trim().split(/\s+/).filter(Boolean).length;
@@ -84,26 +209,24 @@ export const gerarAbordagem = createServerFn({ method: "POST" })
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("nome_vendedor, empresa_vendedor")
+      .select("nome_vendedor")
       .eq("id", context.userId)
       .single();
 
     const vendedor = profile?.nome_vendedor?.trim() || "José";
-    const empresa = profile?.empresa_vendedor?.trim() || "JAL Digital";
 
-    const userPrompt = `Gera uma abordagem comercial usando os dados abaixo.
+    const userPrompt = `Contexto da abordagem:
 Canal: ${data.canal === "email" ? "e-mail" : "WhatsApp"}
-Perfil do utilizador: ${vendedor}, ${empresa}
-Dados do negócio:
+Representante: ${vendedor}
+Dados disponíveis do negócio:
 Nome: ${lead.nome_empresa}
-Nicho: ${lead.nicho ?? "não fornecido"}
+Atividade: ${lead.nicho ?? "não fornecida"}
 Cidade: ${lead.cidade ?? "não fornecida"}
 Endereço: ${lead.endereco ?? "não fornecido"}
-Classificação: ${lead.rating ?? "não fornecida"}
-Número de avaliações: ${lead.total_avaliacoes ?? "não fornecido"}
-Website: ${lead.website ?? "não fornecido"}
+Website encontrado: ${lead.website ?? "não fornecido"}
 Telefone: ${lead.telefone ?? "não fornecido"}
-Score SEO: ${lead.score_seo ?? "não fornecido"}`;
+Classificação no Google: ${lead.rating ?? "não fornecida"}
+Número de avaliações: ${lead.total_avaliacoes ?? "não fornecido"}`;
 
     // Constrói o histórico da conversa: vendedor -> model, cliente -> user.
     const contents: Array<{ role: "user" | "model"; texto: string; imagens: string[] }> = [
@@ -124,7 +247,8 @@ Score SEO: ${lead.score_seo ?? "não fornecido"}`;
       return { mime: match[1], b64: match[2] };
     };
 
-    const systemText = SYSTEM_PROMPT;
+    const primeira = data.historico.length === 0;
+    const systemText = SYSTEM_PROMPT(vendedor, primeira, data.canal);
     const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
     // 1) Preferir o Lovable AI Gateway (sem limites do plano gratuito do Gemini).
@@ -167,7 +291,7 @@ Score SEO: ${lead.score_seo ?? "não fornecido"}`;
             choices?: Array<{ message?: { content?: string } }>;
           };
           const texto = j.choices?.[0]?.message?.content?.trim() ?? "";
-          if (texto) return { texto: validarLimiteDePalavras(texto) };
+          if (texto) return interpretarResposta(texto, primeira, data.canal);
           break; // resposta vazia — tentar o fallback direto
         }
 
@@ -234,7 +358,7 @@ Score SEO: ${lead.score_seo ?? "não fornecido"}`;
             ?.map((p) => p.text ?? "")
             .join("")
             .trim() ?? "";
-        return { texto: validarLimiteDePalavras(texto) };
+        return interpretarResposta(texto, primeira, data.canal);
       }
 
       if (r.status === 429 && attempt < 2) {

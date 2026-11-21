@@ -1,4 +1,5 @@
 <!-- LOVABLE:BEGIN -->
+
 > [!IMPORTANT]
 > This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
 > published git history — force pushing, or rebasing/amending/squashing commits
@@ -7,6 +8,8 @@
 >
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
+
 <!-- LOVABLE:END -->
 
-- Enforce the commercial-message word range in the shared server response validator so both AI providers return only compliant messages.
+- Enforce the 35–60-word range on the copy-ready commercial message through a shared server validator so both AI providers use the same limit.
+- Parse first-contact AI analysis separately from the copy-ready message so copying never includes internal analysis.
