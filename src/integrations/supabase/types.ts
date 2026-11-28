@@ -163,6 +163,78 @@ export type Database = {
         }
         Relationships: []
       }
+      site_projects: {
+        Row: {
+          briefing: string
+          chamada_acao: string | null
+          cidade: string | null
+          cor_marca: string
+          created_at: string
+          descricao: string | null
+          email: string | null
+          github_path: string | null
+          id: string
+          lead_id: string
+          logo_url: string | null
+          nicho: string | null
+          nome_empresa: string
+          preview_url: string | null
+          servicos: string | null
+          slug: string
+          status: string
+          telefone: string | null
+          updated_at: string
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          briefing: string
+          chamada_acao?: string | null
+          cidade?: string | null
+          cor_marca?: string
+          created_at?: string
+          descricao?: string | null
+          email?: string | null
+          github_path?: string | null
+          id?: string
+          lead_id: string
+          logo_url?: string | null
+          nicho?: string | null
+          nome_empresa: string
+          preview_url?: string | null
+          servicos?: string | null
+          slug: string
+          status?: string
+          telefone?: string | null
+          updated_at?: string
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          briefing?: string
+          chamada_acao?: string | null
+          cidade?: string | null
+          cor_marca?: string
+          created_at?: string
+          descricao?: string | null
+          email?: string | null
+          github_path?: string | null
+          id?: string
+          lead_id?: string
+          logo_url?: string | null
+          nicho?: string | null
+          nome_empresa?: string
+          preview_url?: string | null
+          servicos?: string | null
+          slug?: string
+          status?: string
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

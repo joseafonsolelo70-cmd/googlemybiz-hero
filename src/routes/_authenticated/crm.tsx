@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, ChevronLeft, ChevronRight, Star, Trash2, Flame, Search, SlidersHorizontal } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Star, Trash2, Flame, Search, SlidersHorizontal, Globe2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { ScoreBadge } from "@/components/score-badge";
 import { LeadDialog } from "@/components/lead-dialog";
 import { cn } from "@/lib/utils";
 import { prioridadeLabel, temperaturaLabel } from "@/lib/premium";
+import { SiteBuilderDialog } from "@/components/site-builder-dialog";
 
 export const Route = createFileRoute("/_authenticated/crm")({
   head: () => ({ meta: [{ title: "CRM de Leads — GMN Prospect" }] }),
@@ -39,6 +40,8 @@ function CrmPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [filtro, setFiltro] = useState("");
   const [temperatura, setTemperatura] = useState("todas");
+  const [siteLead, setSiteLead] = useState<Lead | null>(null);
+  const [siteDialogOpen, setSiteDialogOpen] = useState(false);
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["leads", user?.id],
@@ -188,6 +191,16 @@ function CrmPage() {
                               <ChevronRight className="h-4 w-4" />
                             </Button>
                           </div>
+                          {!lead.website && lead.website_status !== "em_criacao" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 gap-1 px-2 text-[11px] text-action"
+                              onClick={() => { setSiteLead(lead); setSiteDialogOpen(true); }}
+                            >
+                              <Globe2 className="h-3.5 w-3.5" /> Criar site
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -213,6 +226,7 @@ function CrmPage() {
       )}
 
       <LeadDialog lead={selected} open={dialogOpen} onOpenChange={setDialogOpen} />
+      <SiteBuilderDialog lead={siteLead} open={siteDialogOpen} onOpenChange={setSiteDialogOpen} />
     </div>
   );
 }
