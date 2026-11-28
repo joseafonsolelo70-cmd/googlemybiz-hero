@@ -9,7 +9,6 @@ import {
   Phone,
   Globe,
   MapPin,
-  CalendarClock,
   MessageSquarePlus,
   Send,
   Bot,
@@ -77,7 +76,8 @@ export function LeadDialog({
   const [anexos, setAnexos] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [canal, setCanal] = useState<"whatsapp" | "email">("whatsapp");
-  const [followup, setFollowup] = useState("");
+  const [followupMessage, setFollowupMessage] = useState("");
+  const [followupSubject, setFollowupSubject] = useState("");
   const [nota, setNota] = useState("");
   const [email, setEmail] = useState("");
   const [decisor, setDecisor] = useState("");
@@ -97,6 +97,8 @@ export function LeadDialog({
       setEmail(lead.email ?? "");
       setDecisor(lead.decisor ?? "");
       setValorEstimado(lead.valor_estimado?.toString() ?? "");
+      setFollowupMessage("");
+      setFollowupSubject("");
     }
   }, [lead, open]);
 
@@ -187,21 +189,6 @@ export function LeadDialog({
     toast.success("Copiado!");
   };
 
-  const followupMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from("leads")
-        .update({ proximo_followup: followup ? new Date(followup).toISOString() : null })
-        .eq("id", lead!.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
-      toast.success("Follow-up agendado.");
-    },
-    onError: () => toast.error("Não foi possível agendar."),
-  });
-
   const notaMutation = useMutation({
     mutationFn: async (tipo: Tables<"interacoes">["tipo"]) => {
       const { error } = await supabase.from("interacoes").insert({
@@ -235,6 +222,33 @@ export function LeadDialog({
     },
     onError: () => toast.error("Não foi possível guardar os dados comerciais."),
   });
+
+  const registarFollowupMutation = useMutation({
+    mutationFn: async () => {
+      const texto = followupMessage.trim();
+      if (!texto) throw new Error("Escreve primeiro a mensagem de follow-up.");
+      const [{ error: interactionError }, { error: leadError }] = await Promise.all([
+        supabase.from("interacoes").insert({ lead_id: lead!.id, user_id: user!.id, notas: texto, tipo: canal === "email" ? "email" : "mensagem" }),
+        supabase.from("leads").update({ tentativas_contacto: (lead!.tentativas_contacto ?? 0) + 1, ultima_interacao_at: new Date().toISOString(), proxima_acao: "Aguardar resposta ao follow-up" }).eq("id", lead!.id),
+      ]);
+      if (interactionError || leadError) throw interactionError ?? leadError;
+    },
+    onSuccess: () => { setFollowupMessage(""); setFollowupSubject(""); queryClient.invalidateQueries({ queryKey: ["leads"] }); queryClient.invalidateQueries({ queryKey: ["interacoes", lead?.id] }); toast.success("Follow-up registado no histórico."); },
+    onError: (error: Error) => toast.error(error.message || "Não foi possível registar o follow-up."),
+  });
+
+  const abrirCanalFollowup = () => {
+    const texto = followupMessage.trim();
+    if (!texto) { toast.error("Escreve primeiro a mensagem de follow-up."); return; }
+    if (canal === "email") {
+      if (!email) { toast.error("Este lead ainda não tem e-mail."); return; }
+      window.open(`mailto:${email}?subject=${encodeURIComponent(followupSubject || "Follow-up — JAL Digital")}&body=${encodeURIComponent(texto)}`, "_blank");
+    } else {
+      if (!lead.telefone) { toast.error("Este lead ainda não tem telefone."); return; }
+      window.open(`https://wa.me/${lead.telefone.replace(/\D/g, "")}?text=${encodeURIComponent(texto)}`, "_blank");
+    }
+    registarFollowupMutation.mutate();
+  };
 
   if (!lead) return null;
 
@@ -536,6 +550,16 @@ export function LeadDialog({
           </TabsContent>
 
           <TabsContent value="followup" className="space-y-3 pt-3">
+            <div className="rounded-md border border-action/30 bg-action/5 p-3">
+              <p className="mb-1 text-sm font-semibold text-foreground">Mensagem de follow-up</p>
+              <p className="mb-3 text-xs text-muted-foreground">Escreve a mensagem para este cliente, copia ou abre diretamente o canal de envio.</p>
+              <div className="mb-2 flex gap-1.5">
+                {(["whatsapp", "email"] as const).map((c) => <button key={c} type="button" onClick={() => setCanal(c)} className={`flex-1 rounded-md border px-2 py-1.5 text-xs font-medium ${canal === c ? "border-action bg-action/10 text-action" : "border-border text-muted-foreground"}`}>{c === "whatsapp" ? "WhatsApp" : "E-mail"}</button>)}
+              </div>
+              {canal === "email" && <Input value={followupSubject} onChange={(e) => setFollowupSubject(e.target.value)} placeholder="Assunto do e-mail" className="mb-2" />}
+              <Textarea value={followupMessage} onChange={(e) => setFollowupMessage(e.target.value)} placeholder="Olá! Estou a dar seguimento à nossa conversa..." rows={5} />
+              <div className="mt-2 flex flex-wrap gap-2"><Button variant="outline" size="sm" disabled={!followupMessage.trim()} onClick={() => copyTexto(followupMessage)}><Copy className="h-4 w-4" /> Copiar</Button><Button variant="action" size="sm" disabled={!followupMessage.trim() || registarFollowupMutation.isPending} onClick={abrirCanalFollowup}><Send className="h-4 w-4" /> Abrir e registar envio</Button><Button variant="outline" size="sm" disabled={!followupMessage.trim() || registarFollowupMutation.isPending} onClick={() => registarFollowupMutation.mutate()}><MessageSquarePlus className="h-4 w-4" /> Só registar</Button></div>
+            </div>
             <div className="rounded-md border bg-muted/20 p-3">
               <p className="mb-2 text-xs font-semibold text-foreground">Dados comerciais</p>
               <div className="grid gap-2 sm:grid-cols-2">
@@ -545,27 +569,7 @@ export function LeadDialog({
               </div>
               <Button variant="outline" size="sm" className="mt-3" disabled={dadosComerciaisMutation.isPending} onClick={() => dadosComerciaisMutation.mutate()}>Guardar dados comerciais</Button>
             </div>
-            <Label htmlFor="followup">Próximo lembrete</Label>
-            <Input
-              id="followup"
-              type="datetime-local"
-              value={followup}
-              onChange={(e) => setFollowup(e.target.value)}
-            />
-            {lead.proximo_followup && (
-              <p className="text-xs text-muted-foreground">
-                Atual: {format(new Date(lead.proximo_followup), "dd/MM/yyyy HH:mm")}
-              </p>
-            )}
-            <Button
-              variant="action"
-              size="sm"
-              className="w-full"
-              disabled={followupMutation.isPending}
-              onClick={() => followupMutation.mutate()}
-            >
-              <CalendarClock className="h-4 w-4" /> Agendar follow-up
-            </Button>
+            {lead.proximo_followup && <p className="text-xs text-muted-foreground">Lembrete atual: {format(new Date(lead.proximo_followup), "dd/MM/yyyy HH:mm")}</p>}
           </TabsContent>
 
           <TabsContent value="historico" className="space-y-3 pt-3">
