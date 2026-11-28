@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, ChevronLeft, ChevronRight, Star, Trash2 } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Star, Trash2, Flame, Search, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ScoreBadge } from "@/components/score-badge";
 import { LeadDialog } from "@/components/lead-dialog";
 import { cn } from "@/lib/utils";
+import { prioridadeLabel, temperaturaLabel } from "@/lib/premium";
 
 export const Route = createFileRoute("/_authenticated/crm")({
   head: () => ({ meta: [{ title: "CRM de Leads — GMN Prospect" }] }),
@@ -36,6 +37,8 @@ function CrmPage() {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<Lead | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [filtro, setFiltro] = useState("");
+  const [temperatura, setTemperatura] = useState("todas");
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["leads", user?.id],
@@ -87,13 +90,36 @@ function CrmPage() {
     setDialogOpen(true);
   };
 
+  const leadsFiltrados = useMemo(() => {
+    const termo = filtro.trim().toLowerCase();
+    return (leads ?? []).filter((lead) => {
+      const matchTermo = !termo || [lead.nome_empresa, lead.nicho, lead.cidade, lead.telefone].some((v) => v?.toLowerCase().includes(termo));
+      return matchTermo && (temperatura === "todas" || lead.temperatura === temperatura);
+    });
+  }, [leads, filtro, temperatura]);
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">CRM de Leads</h1>
         <p className="text-sm text-muted-foreground">
-          Arraste o seu pipeline com os botões e clique num lead para gerar abordagens.
+          Priorize os melhores negócios, execute a próxima ação e acompanhe cada oportunidade.
         </p>
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-lg border bg-card p-3 sm:flex-row">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <input value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder="Pesquisar empresa, nicho, cidade ou telefone" className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring" />
+        </div>
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+          {(["todas", "quente", "morno", "frio"] as const).map((item) => (
+            <button key={item} type="button" onClick={() => setTemperatura(item)} className={cn("rounded-md px-2.5 py-1.5 text-xs capitalize", temperatura === item ? "bg-action text-action-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70")}>
+              {item === "todas" ? "Todas" : temperaturaLabel(item)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (
@@ -103,7 +129,7 @@ function CrmPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
           {COLUMNS.map((col) => {
-            const colLeads = (leads ?? []).filter((l) => l.status_funil === col.key);
+            const colLeads = leadsFiltrados.filter((l) => l.status_funil === col.key).sort((a, b) => (b.score_prioridade ?? 0) - (a.score_prioridade ?? 0));
             return (
               <div key={col.key} className="space-y-3">
                 <div className="flex items-center justify-between px-1">
@@ -135,6 +161,11 @@ function CrmPage() {
                           <div className="mt-2">
                             <ScoreBadge score={lead.score_seo ?? 0} />
                           </div>
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px]">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-action/10 px-2 py-0.5 font-semibold text-action"><Flame className="h-3 w-3" /> {lead.score_prioridade ?? 0} · {prioridadeLabel(lead.score_prioridade ?? 0)}</span>
+                            <span className={cn("rounded-full px-2 py-0.5", lead.temperatura === "quente" ? "bg-destructive/10 text-destructive" : lead.temperatura === "morno" ? "bg-warning/15 text-warning" : "bg-muted text-muted-foreground")}>{temperaturaLabel(lead.temperatura)}</span>
+                          </div>
+                          {lead.proxima_acao && <p className="mt-2 text-[11px] text-muted-foreground">Próxima ação: {lead.proxima_acao}</p>}
                         </button>
                         <div className="flex items-center justify-between pt-1">
                           <div className="flex gap-1">

@@ -8,6 +8,9 @@ import {
   Loader2,
   ArrowUpRight,
   Star,
+  TrendingUp,
+  WalletCards,
+  Zap,
 } from "lucide-react";
 import { format, isToday, isPast } from "date-fns";
 
@@ -18,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScoreBadge } from "@/components/score-badge";
 import { oportunidadeFromScore } from "@/lib/seo";
+import { prioridadeLabel } from "@/lib/premium";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — GMN Prospect" }] }),
@@ -51,12 +55,23 @@ function DashboardPage() {
   const followupsHoje = all.filter(
     (l) => l.proximo_followup && (isToday(new Date(l.proximo_followup)) || isPast(new Date(l.proximo_followup))),
   );
+  const propostas = all.filter((l) => l.status_funil === "proposta" || l.status_funil === "fechado").length;
+  const taxaFecho = propostas > 0 ? Math.round((fechados / propostas) * 100) : 0;
+  const pipelineValue = all
+    .filter((l) => l.status_funil !== "perdido" && l.status_funil !== "fechado")
+    .reduce((sum, l) => sum + (l.valor_estimado ?? 0), 0);
+  const urgentes = all.filter(
+    (l) => (l.score_prioridade ?? 0) >= 80 || (l.proximo_followup && isPast(new Date(l.proximo_followup))),
+  ).length;
 
   const stats = [
     { label: "Total de leads", value: total, icon: Users, color: "text-chart-1" },
     { label: "Oportunidades altas", value: oportunidadesAltas, icon: Flame, color: "text-success" },
     { label: "Follow-ups pendentes", value: followupsHoje.length, icon: CalendarClock, color: "text-warning" },
     { label: "Contratos fechados", value: fechados, icon: CheckCircle2, color: "text-action" },
+    { label: "Taxa de fecho", value: `${taxaFecho}%`, icon: TrendingUp, color: "text-chart-1" },
+    { label: "Pipeline estimado", value: pipelineValue.toLocaleString("pt-PT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }), icon: WalletCards, color: "text-success" },
+    { label: "Ações urgentes", value: urgentes, icon: Zap, color: "text-warning" },
   ];
 
   return (
@@ -146,7 +161,7 @@ function DashboardPage() {
                   </p>
                 ) : (
                   [...all]
-                    .sort((a, b) => (a.score_seo ?? 0) - (b.score_seo ?? 0))
+                    .sort((a, b) => (b.score_prioridade ?? 0) - (a.score_prioridade ?? 0))
                     .slice(0, 5)
                     .map((l) => (
                       <Link
@@ -165,6 +180,7 @@ function DashboardPage() {
                             </span>
                           )}
                           <ScoreBadge score={l.score_seo ?? 0} />
+                          <span className="rounded-full bg-action/10 px-2 py-0.5 text-[10px] font-semibold text-action" title={prioridadeLabel(l.score_prioridade ?? 0)}>{l.score_prioridade ?? 0}</span>
                         </span>
                       </Link>
                     ))

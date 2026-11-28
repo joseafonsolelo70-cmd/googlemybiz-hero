@@ -57,58 +57,109 @@ export type Database = {
           abordagem_ia: string | null
           cidade: string | null
           created_at: string
+          decisor: string | null
+          email: string | null
           endereco: string | null
           id: string
+          melhor_horario: string | null
+          motivo_perda: string | null
           nicho: string | null
           nome_empresa: string
+          observacoes: string | null
+          origem: string
           place_id: string | null
+          proxima_acao: string | null
           proximo_followup: string | null
           rating: number | null
+          reuniao_at: string | null
+          score_comercial: number
+          score_prioridade: number
           score_seo: number | null
+          servico_interesse: string | null
           status_funil: Database["public"]["Enums"]["status_funil"]
+          temperatura: string
           telefone: string | null
+          tentativas_contacto: number
           total_avaliacoes: number | null
+          ultima_interacao_at: string | null
           updated_at: string
           user_id: string
+          valor_estimado: number | null
           website: string | null
+          website_status: string
+          whatsapp_confirmado: boolean
         }
         Insert: {
           abordagem_ia?: string | null
           cidade?: string | null
           created_at?: string
+          decisor?: string | null
+          email?: string | null
           endereco?: string | null
           id?: string
+          melhor_horario?: string | null
+          motivo_perda?: string | null
           nicho?: string | null
           nome_empresa: string
+          observacoes?: string | null
+          origem?: string
           place_id?: string | null
+          proxima_acao?: string | null
           proximo_followup?: string | null
           rating?: number | null
+          reuniao_at?: string | null
+          score_comercial?: number
+          score_prioridade?: number
           score_seo?: number | null
+          servico_interesse?: string | null
           status_funil?: Database["public"]["Enums"]["status_funil"]
+          temperatura?: string
           telefone?: string | null
+          tentativas_contacto?: number
           total_avaliacoes?: number | null
+          ultima_interacao_at?: string | null
           updated_at?: string
           user_id: string
+          valor_estimado?: number | null
           website?: string | null
+          website_status?: string
+          whatsapp_confirmado?: boolean
         }
         Update: {
           abordagem_ia?: string | null
           cidade?: string | null
           created_at?: string
+          decisor?: string | null
+          email?: string | null
           endereco?: string | null
           id?: string
+          melhor_horario?: string | null
+          motivo_perda?: string | null
           nicho?: string | null
           nome_empresa?: string
+          observacoes?: string | null
+          origem?: string
           place_id?: string | null
+          proxima_acao?: string | null
           proximo_followup?: string | null
           rating?: number | null
+          reuniao_at?: string | null
+          score_comercial?: number
+          score_prioridade?: number
           score_seo?: number | null
+          servico_interesse?: string | null
           status_funil?: Database["public"]["Enums"]["status_funil"]
+          temperatura?: string
           telefone?: string | null
+          tentativas_contacto?: number
           total_avaliacoes?: number | null
+          ultima_interacao_at?: string | null
           updated_at?: string
           user_id?: string
+          valor_estimado?: number | null
           website?: string | null
+          website_status?: string
+          whatsapp_confirmado?: boolean
         }
         Relationships: []
       }

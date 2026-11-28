@@ -6,6 +6,7 @@ import {
   Settings,
   Target,
   KeyRound,
+  BarChart3,
 } from "lucide-react";
 
 import {
@@ -26,6 +27,7 @@ const items = [
   { title: "Prospecção Maps", url: "/prospeccao", icon: MapPinned },
   { title: "Palavras-chave", url: "/palavras-chave", icon: KeyRound },
   { title: "CRM de Leads", url: "/crm", icon: KanbanSquare },
+  { title: "Relatórios premium", url: "/relatorios", icon: BarChart3 },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 

@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScoreBadge } from "@/components/score-badge";
 import { whatsappLink } from "@/lib/utils";
+import { calcularScoreComercial, calcularScorePrioridade, temperaturaFromLead, proximaAcaoDoLead } from "@/lib/premium";
 
 export const Route = createFileRoute("/_authenticated/prospeccao")({
   head: () => ({ meta: [{ title: "Prospecção Maps — GMN Prospect" }] }),
@@ -77,6 +78,26 @@ function ProspeccaoPage() {
     mutationFn: async (place: PlaceResult) => {
       if (!user) throw new Error("Sessão expirada. Entre novamente.");
       if (existingIds?.has(place.place_id)) return place.place_id;
+      const scoreComercial = calcularScoreComercial({
+        scoreSeo: place.score_seo,
+        rating: place.rating,
+        totalAvaliacoes: place.total_avaliacoes,
+        hasWebsite: !!place.website,
+        hasTelefone: !!place.telefone,
+        niche: nicho,
+      });
+      const temperatura = temperaturaFromLead({
+        status_funil: "novo",
+        proximo_followup: null,
+        tentativas_contacto: 0,
+        score_comercial: scoreComercial,
+      });
+      const scorePrioridade = calcularScorePrioridade({
+        scoreSeo: place.score_seo,
+        scoreComercial,
+        temperatura,
+        status: "novo",
+      });
       const { error } = await supabase.from("leads").insert({
         user_id: user.id,
         nome_empresa: place.nome_empresa,
@@ -90,6 +111,18 @@ function ProspeccaoPage() {
         nicho,
         cidade,
         status_funil: "novo",
+        score_comercial: scoreComercial,
+        score_prioridade: scorePrioridade,
+        temperatura,
+        proxima_acao: proximaAcaoDoLead({
+          status_funil: "novo",
+          proximo_followup: null,
+          tentativas_contacto: 0,
+          abordagem_ia: null,
+          ultima_interacao_at: null,
+          reuniao_at: null,
+        }),
+        website_status: place.website ? "existente" : "nao_verificado",
       });
       if (error) throw error;
       return place.place_id;

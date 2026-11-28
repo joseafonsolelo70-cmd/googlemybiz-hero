@@ -79,6 +79,9 @@ export function LeadDialog({
   const [canal, setCanal] = useState<"whatsapp" | "email">("whatsapp");
   const [followup, setFollowup] = useState("");
   const [nota, setNota] = useState("");
+  const [email, setEmail] = useState("");
+  const [decisor, setDecisor] = useState("");
+  const [valorEstimado, setValorEstimado] = useState("");
   const [etapa, setEtapa] = useState<EtapaFunil>(
     (lead?.status_funil as EtapaFunil | null) ?? "novo",
   );
@@ -91,6 +94,9 @@ export function LeadDialog({
       setClienteInput("");
       setAnexos([]);
       setEtapa((lead.status_funil as EtapaFunil | null) ?? "novo");
+      setEmail(lead.email ?? "");
+      setDecisor(lead.decisor ?? "");
+      setValorEstimado(lead.valor_estimado?.toString() ?? "");
     }
   }, [lead, open]);
 
@@ -121,7 +127,12 @@ export function LeadDialog({
       setConversa(novaConversa);
       setClienteInput("");
       setAnexos([]);
-      await supabase.from("leads").update({ abordagem_ia: res.texto }).eq("id", lead!.id);
+      const { error } = await supabase.from("leads").update({
+        abordagem_ia: res.texto,
+        tentativas_contacto: (lead!.tentativas_contacto ?? 0) + 1,
+        ultima_interacao_at: new Date().toISOString(),
+      }).eq("id", lead!.id);
+      if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       toast.success("Mensagem gerada!");
     },
@@ -209,6 +220,22 @@ export function LeadDialog({
     onError: () => toast.error("Não foi possível registar."),
   });
 
+  const dadosComerciaisMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("leads").update({
+        email: email.trim() || null,
+        decisor: decisor.trim() || null,
+        valor_estimado: valorEstimado ? Number(valorEstimado) : null,
+      }).eq("id", lead!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      toast.success("Dados comerciais atualizados.");
+    },
+    onError: () => toast.error("Não foi possível guardar os dados comerciais."),
+  });
+
   if (!lead) return null;
 
   const temConversa = conversa.length > 0;
@@ -220,6 +247,9 @@ export function LeadDialog({
           <DialogTitle className="flex items-center gap-2">{lead.nome_empresa}</DialogTitle>
           <DialogDescription className="flex flex-wrap items-center gap-2">
             <ScoreBadge score={lead.score_seo ?? 0} />
+            <span className="rounded-full bg-action/10 px-2 py-1 text-xs font-medium text-action">Comercial {lead.score_comercial ?? 0}</span>
+            <span className="rounded-full bg-warning/10 px-2 py-1 text-xs font-medium text-warning">Prioridade {lead.score_prioridade ?? 0}</span>
+            <span className="rounded-full bg-muted px-2 py-1 text-xs capitalize text-muted-foreground">{lead.temperatura ?? "frio"}</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -506,6 +536,15 @@ export function LeadDialog({
           </TabsContent>
 
           <TabsContent value="followup" className="space-y-3 pt-3">
+            <div className="rounded-md border bg-muted/20 p-3">
+              <p className="mb-2 text-xs font-semibold text-foreground">Dados comerciais</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div><Label htmlFor="lead-email" className="text-xs">E-mail</Label><Input id="lead-email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@empresa.pt" /></div>
+                <div><Label htmlFor="lead-decisor" className="text-xs">Decisor</Label><Input id="lead-decisor" value={decisor} onChange={(e) => setDecisor(e.target.value)} placeholder="Nome do responsável" /></div>
+                <div><Label htmlFor="lead-valor" className="text-xs">Valor estimado (€)</Label><Input id="lead-valor" type="number" min="0" value={valorEstimado} onChange={(e) => setValorEstimado(e.target.value)} placeholder="1500" /></div>
+              </div>
+              <Button variant="outline" size="sm" className="mt-3" disabled={dadosComerciaisMutation.isPending} onClick={() => dadosComerciaisMutation.mutate()}>Guardar dados comerciais</Button>
+            </div>
             <Label htmlFor="followup">Próximo lembrete</Label>
             <Input
               id="followup"
