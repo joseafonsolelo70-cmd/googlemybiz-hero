@@ -163,54 +163,6 @@ export type Database = {
         }
         Relationships: []
       }
-      scheduled_messages: {
-        Row: {
-          body: string
-          channel: string
-          created_at: string
-          error_message: string | null
-          id: string
-          lead_id: string
-          provider_message_id: string | null
-          send_at: string
-          sent_at: string | null
-          status: string
-          subject: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          body: string
-          channel: string
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          lead_id: string
-          provider_message_id?: string | null
-          send_at: string
-          sent_at?: string | null
-          status?: string
-          subject?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          body?: string
-          channel?: string
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          lead_id?: string
-          provider_message_id?: string | null
-          send_at?: string
-          sent_at?: string | null
-          status?: string
-          subject?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       site_projects: {
         Row: {
           briefing: string
