@@ -58,6 +58,23 @@ const ETAPAS: { value: EtapaFunil; label: string; hint: string }[] = [
   { value: "fechado", label: "Fechamento", hint: "Agradecer e confirmar próximos passos" },
 ];
 
+const FOLLOWUP_TEMPLATES = [
+  "Olá! Só queria dar seguimento à mensagem que enviei sobre a presença digital da {empresa}. Identifiquei uma oportunidade simples para ajudar o negócio a ser encontrado por mais pessoas. Posso mostrar-lhe rapidamente o que encontrei?",
+  "Olá! Volto ao contacto porque talvez a minha mensagem anterior tenha ficado por ver. Preparei uma ideia prática para melhorar a visibilidade da {empresa} no Google. Quer que lhe envie um resumo sem compromisso?",
+  "Bom dia! Tenho acompanhado a presença online da {empresa} e acredito que existem melhorias que podem trazer mais pedidos de contacto. Posso enviar-lhe dois exemplos concretos?",
+  "Olá! Não quero incomodar, por isso serei breve: há uma oportunidade para a {empresa} aparecer melhor quando potenciais clientes procuram serviços na sua zona. Faz sentido conversarmos cinco minutos?",
+  "Olá novamente! Muitas empresas perdem contactos simplesmente porque o cliente não encontra informação suficiente online. Posso mostrar-lhe como isso se pode resolver na {empresa}, de forma simples e profissional?",
+  "Bom dia! Deixo-lhe este último ponto: uma presença digital bem organizada transmite confiança antes mesmo do primeiro contacto. Quer que lhe mostre uma proposta adaptada à {empresa}?",
+  "Olá! Talvez este seja um melhor momento para falarmos. A JAL Digital ajuda negócios locais a transformar a sua presença online numa fonte de novos contactos. Posso enviar-lhe uma demonstração?",
+  "Olá! Continuo disponível caso queira perceber como a {empresa} pode melhorar a forma como aparece no Google e nas pesquisas locais. Prefere receber a explicação por mensagem ou marcar uma chamada?",
+  "Olá! Faço apenas mais este acompanhamento para não deixar a oportunidade passar. Se melhorar a presença online da {empresa} for uma prioridade, terei todo o gosto em preparar uma sugestão concreta.",
+  "Olá! Este será o meu último contacto sobre este assunto. Se no futuro quiser melhorar a presença digital da {empresa}, pode responder a esta mensagem e retomamos a conversa. Desejo-lhe muito sucesso!",
+];
+
+function mensagemFollowup(indice: number, empresa: string): string {
+  return FOLLOWUP_TEMPLATES[indice - 1].replaceAll("{empresa}", empresa);
+}
+
 export function LeadDialog({
   lead,
   open,
@@ -78,6 +95,7 @@ export function LeadDialog({
   const [canal, setCanal] = useState<"whatsapp" | "email">("whatsapp");
   const [followupMessage, setFollowupMessage] = useState("");
   const [followupSubject, setFollowupSubject] = useState("");
+  const [followupStep, setFollowupStep] = useState(1);
   const [nota, setNota] = useState("");
   const [email, setEmail] = useState("");
   const [decisor, setDecisor] = useState("");
@@ -97,8 +115,10 @@ export function LeadDialog({
       setEmail(lead.email ?? "");
       setDecisor(lead.decisor ?? "");
       setValorEstimado(lead.valor_estimado?.toString() ?? "");
-      setFollowupMessage("");
       setFollowupSubject("");
+      const nextFollowup = Math.min(Math.max((lead.tentativas_contacto ?? 0) + 1, 1), 10);
+      setFollowupStep(nextFollowup);
+      setFollowupMessage(mensagemFollowup(nextFollowup, lead.nome_empresa));
     }
   }, [lead, open]);
 
@@ -233,7 +253,15 @@ export function LeadDialog({
       ]);
       if (interactionError || leadError) throw interactionError ?? leadError;
     },
-    onSuccess: () => { setFollowupMessage(""); setFollowupSubject(""); queryClient.invalidateQueries({ queryKey: ["leads"] }); queryClient.invalidateQueries({ queryKey: ["interacoes", lead?.id] }); toast.success("Follow-up registado no histórico."); },
+    onSuccess: () => {
+      const nextFollowup = Math.min(followupStep + 1, 10);
+      setFollowupStep(nextFollowup);
+      setFollowupMessage(mensagemFollowup(nextFollowup, lead!.nome_empresa));
+      setFollowupSubject("");
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["interacoes", lead?.id] });
+      toast.success(followupStep < 10 ? `Follow-up ${followupStep} registado. Próxima mensagem preparada.` : "Décimo follow-up registado. Agora deixa o cliente responder.");
+    },
     onError: (error: Error) => toast.error(error.message || "Não foi possível registar o follow-up."),
   });
 
@@ -551,14 +579,19 @@ export function LeadDialog({
 
           <TabsContent value="followup" className="space-y-3 pt-3">
             <div className="rounded-md border border-action/30 bg-action/5 p-3">
-              <p className="mb-1 text-sm font-semibold text-foreground">Mensagem de follow-up</p>
-              <p className="mb-3 text-xs text-muted-foreground">Escreve a mensagem para este cliente, copia ou abre diretamente o canal de envio.</p>
+              <p className="mb-1 text-sm font-semibold text-foreground">Sequência de follow-up</p>
+              <p className="mb-3 text-xs text-muted-foreground">Escolhe o contacto seguinte. As mensagens já estão preparadas para clientes que ainda não responderam.</p>
               <div className="mb-2 flex gap-1.5">
                 {(["whatsapp", "email"] as const).map((c) => <button key={c} type="button" onClick={() => setCanal(c)} className={`flex-1 rounded-md border px-2 py-1.5 text-xs font-medium ${canal === c ? "border-action bg-action/10 text-action" : "border-border text-muted-foreground"}`}>{c === "whatsapp" ? "WhatsApp" : "E-mail"}</button>)}
               </div>
+              <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10">
+                {FOLLOWUP_TEMPLATES.map((_, index) => { const step = index + 1; return <button key={step} type="button" onClick={() => { setFollowupStep(step); setFollowupMessage(mensagemFollowup(step, lead.nome_empresa)); }} className={`rounded-md border px-1 py-1.5 text-[10px] font-semibold ${followupStep === step ? "border-action bg-action text-action-foreground" : "border-border text-muted-foreground hover:bg-muted"}`}>{step}º</button>; })}
+              </div>
+              <p className="mt-2 text-[11px] font-medium text-action">{followupStep}º follow-up de 10</p>
               {canal === "email" && <Input value={followupSubject} onChange={(e) => setFollowupSubject(e.target.value)} placeholder="Assunto do e-mail" className="mb-2" />}
-              <Textarea value={followupMessage} onChange={(e) => setFollowupMessage(e.target.value)} placeholder="Olá! Estou a dar seguimento à nossa conversa..." rows={5} />
+              <Textarea value={followupMessage} onChange={(e) => setFollowupMessage(e.target.value)} placeholder="A mensagem do follow-up aparece aqui automaticamente..." rows={5} />
               <div className="mt-2 flex flex-wrap gap-2"><Button variant="outline" size="sm" disabled={!followupMessage.trim()} onClick={() => copyTexto(followupMessage)}><Copy className="h-4 w-4" /> Copiar</Button><Button variant="action" size="sm" disabled={!followupMessage.trim() || registarFollowupMutation.isPending} onClick={abrirCanalFollowup}><Send className="h-4 w-4" /> Abrir e registar envio</Button><Button variant="outline" size="sm" disabled={!followupMessage.trim() || registarFollowupMutation.isPending} onClick={() => registarFollowupMutation.mutate()}><MessageSquarePlus className="h-4 w-4" /> Só registar</Button></div>
+              {followupStep === 10 && <p className="mt-2 text-[11px] text-muted-foreground">Depois deste décimo contacto, deixa o cliente descansar e só retoma se ele responder.</p>}
             </div>
             <div className="rounded-md border bg-muted/20 p-3">
               <p className="mb-2 text-xs font-semibold text-foreground">Dados comerciais</p>
@@ -569,7 +602,6 @@ export function LeadDialog({
               </div>
               <Button variant="outline" size="sm" className="mt-3" disabled={dadosComerciaisMutation.isPending} onClick={() => dadosComerciaisMutation.mutate()}>Guardar dados comerciais</Button>
             </div>
-            {lead.proximo_followup && <p className="text-xs text-muted-foreground">Lembrete atual: {format(new Date(lead.proximo_followup), "dd/MM/yyyy HH:mm")}</p>}
           </TabsContent>
 
           <TabsContent value="historico" className="space-y-3 pt-3">
