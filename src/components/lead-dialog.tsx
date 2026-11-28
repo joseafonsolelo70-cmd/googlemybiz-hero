@@ -82,6 +82,9 @@ export function LeadDialog({
   const [email, setEmail] = useState("");
   const [decisor, setDecisor] = useState("");
   const [valorEstimado, setValorEstimado] = useState("");
+  const [mensagemAgendada, setMensagemAgendada] = useState("");
+  const [assuntoAgendado, setAssuntoAgendado] = useState("");
+  const [envioAgendado, setEnvioAgendado] = useState("");
   const [etapa, setEtapa] = useState<EtapaFunil>(
     (lead?.status_funil as EtapaFunil | null) ?? "novo",
   );
@@ -97,6 +100,9 @@ export function LeadDialog({
       setEmail(lead.email ?? "");
       setDecisor(lead.decisor ?? "");
       setValorEstimado(lead.valor_estimado?.toString() ?? "");
+      setMensagemAgendada("");
+      setAssuntoAgendado("");
+      setEnvioAgendado("");
     }
   }, [lead, open]);
 
@@ -234,6 +240,30 @@ export function LeadDialog({
       toast.success("Dados comerciais atualizados.");
     },
     onError: () => toast.error("Não foi possível guardar os dados comerciais."),
+  });
+
+  const agendarMensagemMutation = useMutation({
+    mutationFn: async () => {
+      if (!envioAgendado || !mensagemAgendada.trim()) throw new Error("Indica a mensagem e a data/hora de envio.");
+      const { error } = await supabase.from("scheduled_messages").insert({
+        user_id: user!.id,
+        lead_id: lead!.id,
+        channel: canal,
+        subject: canal === "email" ? assuntoAgendado.trim() || null : null,
+        body: mensagemAgendada.trim(),
+        send_at: new Date(envioAgendado).toISOString(),
+        status: "pending",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setMensagemAgendada("");
+      setAssuntoAgendado("");
+      setEnvioAgendado("");
+      queryClient.invalidateQueries({ queryKey: ["scheduled_messages"] });
+      toast.success("Mensagem adicionada à fila de envio.");
+    },
+    onError: (error: Error) => toast.error(error.message || "Não foi possível agendar a mensagem."),
   });
 
   if (!lead) return null;
@@ -536,6 +566,17 @@ export function LeadDialog({
           </TabsContent>
 
           <TabsContent value="followup" className="space-y-3 pt-3">
+            <div className="rounded-md border border-action/30 bg-action/5 p-3">
+              <p className="mb-1 text-sm font-semibold text-foreground">Mensagem agendada</p>
+              <p className="mb-3 text-xs text-muted-foreground">Escreve agora e coloca na fila para envio no horário definido.</p>
+              <div className="mb-2 flex gap-1.5">
+                {(["whatsapp", "email"] as const).map((c) => <button key={c} type="button" onClick={() => setCanal(c)} className={`flex-1 rounded-md border px-2 py-1.5 text-xs font-medium ${canal === c ? "border-action bg-action/10 text-action" : "border-border text-muted-foreground"}`}>{c === "whatsapp" ? "WhatsApp" : "E-mail"}</button>)}
+              </div>
+              {canal === "email" && <Input value={assuntoAgendado} onChange={(e) => setAssuntoAgendado(e.target.value)} placeholder="Assunto do e-mail" className="mb-2" />}
+              <Textarea value={mensagemAgendada} onChange={(e) => setMensagemAgendada(e.target.value)} placeholder="Escreve a mensagem que será enviada ao cliente..." rows={4} />
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end"><div className="flex-1"><Label htmlFor="envio-agendado" className="text-xs">Enviar em</Label><Input id="envio-agendado" type="datetime-local" value={envioAgendado} onChange={(e) => setEnvioAgendado(e.target.value)} /></div><Button variant="action" size="sm" disabled={agendarMensagemMutation.isPending} onClick={() => agendarMensagemMutation.mutate()}><CalendarClock className="h-4 w-4" /> Colocar na fila</Button></div>
+              <p className="mt-2 text-[11px] text-muted-foreground">O envio automático só será executado quando o canal oficial estiver ligado. Até lá, a mensagem fica guardada como pendente.</p>
+            </div>
             <div className="rounded-md border bg-muted/20 p-3">
               <p className="mb-2 text-xs font-semibold text-foreground">Dados comerciais</p>
               <div className="grid gap-2 sm:grid-cols-2">
