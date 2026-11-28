@@ -59,16 +59,16 @@ const ETAPAS: { value: EtapaFunil; label: string; hint: string }[] = [
 ];
 
 const FOLLOWUP_TEMPLATES = [
-  "Olá! Só queria dar seguimento à mensagem que enviei sobre a presença digital da {empresa}. Identifiquei uma oportunidade simples para ajudar o negócio a ser encontrado por mais pessoas. Posso mostrar-lhe rapidamente o que encontrei?",
-  "Olá! Volto ao contacto porque talvez a minha mensagem anterior tenha ficado por ver. Preparei uma ideia prática para melhorar a visibilidade da {empresa} no Google. Quer que lhe envie um resumo sem compromisso?",
-  "Bom dia! Tenho acompanhado a presença online da {empresa} e acredito que existem melhorias que podem trazer mais pedidos de contacto. Posso enviar-lhe dois exemplos concretos?",
-  "Olá! Não quero incomodar, por isso serei breve: há uma oportunidade para a {empresa} aparecer melhor quando potenciais clientes procuram serviços na sua zona. Faz sentido conversarmos cinco minutos?",
-  "Olá novamente! Muitas empresas perdem contactos simplesmente porque o cliente não encontra informação suficiente online. Posso mostrar-lhe como isso se pode resolver na {empresa}, de forma simples e profissional?",
-  "Bom dia! Deixo-lhe este último ponto: uma presença digital bem organizada transmite confiança antes mesmo do primeiro contacto. Quer que lhe mostre uma proposta adaptada à {empresa}?",
-  "Olá! Talvez este seja um melhor momento para falarmos. A JAL Digital ajuda negócios locais a transformar a sua presença online numa fonte de novos contactos. Posso enviar-lhe uma demonstração?",
-  "Olá! Continuo disponível caso queira perceber como a {empresa} pode melhorar a forma como aparece no Google e nas pesquisas locais. Prefere receber a explicação por mensagem ou marcar uma chamada?",
-  "Olá! Faço apenas mais este acompanhamento para não deixar a oportunidade passar. Se melhorar a presença online da {empresa} for uma prioridade, terei todo o gosto em preparar uma sugestão concreta.",
-  "Olá! Este será o meu último contacto sobre este assunto. Se no futuro quiser melhorar a presença digital da {empresa}, pode responder a esta mensagem e retomamos a conversa. Desejo-lhe muito sucesso!",
+  "Olá! Veja, por favor, a minha última mensagem. Posso criar um site profissional para a {empresa}, apresentar bem os vossos serviços e melhorar a vossa visibilidade online. Posso enviar-lhe uma demonstração sem compromisso?",
+  "Olá novamente! Talvez ainda não tenha conseguido ver a minha mensagem. Estou a falar de um site para a {empresa}, pensado para mostrar os vossos serviços com clareza e gerar mais contactos. Posso enviar-lhe uma demonstração?",
+  "Bom dia! Um site bem apresentado ajuda os clientes a conhecer a {empresa} antes de entrar em contacto. A JAL Digital pode criar uma solução profissional à vossa medida. Quer ver um exemplo de demonstração?",
+  "Olá! Só queria reforçar a minha proposta: criar um site moderno para a {empresa}, com os vossos serviços, contactos e uma apresentação que transmita confiança. Posso preparar e mostrar-lhe uma demonstração?",
+  "Olá! Muitas pessoas procuram uma empresa online antes de pedir um orçamento. Um site pode apresentar melhor a {empresa} e transformar visitas em contactos. Quer que lhe mostre como poderia ficar?",
+  "Bom dia! Posso criar para a {empresa} um site simples, profissional e adaptado ao vosso serviço, para melhorar a visibilidade e facilitar os pedidos de contacto. Posso enviar uma demonstração?",
+  "Olá! A minha proposta é exclusivamente sobre a criação de um site para a {empresa}. O site apresentará os vossos serviços, contactos e diferenciais de forma profissional. Posso mostrar-lhe uma demonstração?",
+  "Olá novamente! Se a {empresa} ainda não tem um site ou se o atual não apresenta bem o vosso serviço, posso ajudar. Quer receber uma demonstração de um site pensado para o vosso negócio?",
+  "Olá! Faço este último acompanhamento porque acredito que um site profissional pode ajudar a {empresa} a ganhar visibilidade e confiança. Se quiser, preparo uma demonstração para ver sem compromisso.",
+  "Olá! Este será o meu último contacto sobre a criação do site. Se quiser melhorar a visibilidade da {empresa} e apresentar melhor os vossos serviços, pode chamar-me para ver uma demonstração. Desejo-vos muito sucesso!",
 ];
 
 function mensagemFollowup(indice: number, empresa: string): string {
